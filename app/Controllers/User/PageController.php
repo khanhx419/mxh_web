@@ -1,0 +1,124 @@
+<?php
+
+require_once BASE_PATH . '/core/Controller.php';
+
+class PageController extends Controller
+{
+    /**
+     * Trang tìm kiếm
+     */
+    public function search()
+    {
+        $keyword = trim($_GET['q'] ?? '');
+
+        $products = [];
+        $services = [];
+
+        if (!empty($keyword)) {
+            $productModel = $this->model('Product');
+            $serviceModel = $this->model('Service');
+
+            // Tìm kiếm products
+            $stmtP = $productModel->getDb()->prepare("
+                SELECT p.*, c.name as category_name 
+                FROM products p 
+                JOIN categories c ON p.category_id = c.id 
+                WHERE p.title LIKE ? AND p.status = 'available'
+            ");
+            $stmtP->execute(["%$keyword%"]);
+            $products = $stmtP->fetchAll();
+
+            // Tìm kiếm services
+            $stmtS = $serviceModel->getDb()->prepare("
+                SELECT s.*, c.name as category_name 
+                FROM services s 
+                JOIN categories c ON s.category_id = c.id 
+                WHERE s.name LIKE ? AND s.status = 1
+            ");
+            $stmtS->execute(["%$keyword%"]);
+            $services = $stmtS->fetchAll();
+        }
+
+        $this->view('user.search', [
+            'pageTitle' => 'Tìm kiếm: ' . ($keyword ?: 'Tất cả'),
+            'keyword' => $keyword,
+            'products' => $products,
+            'services' => $services
+        ]);
+    }
+
+    /**
+     * Bảng xếp hạng nạp
+     */
+    public function leaderboard()
+    {
+        $userModel = $this->model('User');
+
+        // Mặc định tính tổng nạp từ bảng transactions loại 'deposit'
+        $stmt = $userModel->getDb()->query("
+            SELECT u.id, u.username, SUM(t.amount) as total_deposit 
+            FROM users u 
+            JOIN transactions t ON u.id = t.user_id 
+            WHERE t.type = 'deposit' 
+            GROUP BY u.id 
+            ORDER BY total_deposit DESC 
+            LIMIT 10
+        ");
+        $topUsers = $stmt->fetchAll();
+
+        $this->view('user.leaderboard', [
+            'pageTitle' => 'Bảng Xếp Hạng Nạp',
+            'topUsers' => $topUsers
+        ]);
+    }
+
+    /**
+     * Trang Hướng dẫn
+     */
+    public function guide()
+    {
+        $this->view('user.guide', [
+            'pageTitle' => 'Hướng dẫn sử dụng'
+        ]);
+    }
+
+    /**
+     * Trang Liên hệ
+     */
+    public function contact()
+    {
+        $this->view('user.contact', [
+            'pageTitle' => 'Liên Hệ Chúng Tôi'
+        ]);
+    }
+
+    /**
+     * Xử lý form liên hệ
+     */
+    public function submitContact()
+    {
+        if (!verifyCsrf()) {
+            setFlash('danger', 'Phiên làm việc hết hạn.');
+            redirect('/contact');
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $subject = trim($_POST['subject'] ?? '');
+        $message = trim($_POST['message'] ?? '');
+
+        if (empty($name) || empty($email) || empty($message)) {
+            setFlash('danger', 'Vui lòng nhập đầy đủ thông tin bắt buộc.');
+            redirect('/contact');
+        }
+
+        // Lưu vào CSDL
+        $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+        $db = $this->model('User')->getDb();
+        $stmt = $db->prepare("INSERT INTO contact_messages (user_id, name, email, subject, message) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$userId, $name, $email, $subject, $message]);
+
+        setFlash('success', 'Gửi lời nhắn thành công. Chúng tôi sẽ phản hồi sớm nhất!');
+        redirect('/contact');
+    }
+}

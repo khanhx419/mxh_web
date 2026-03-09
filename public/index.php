@@ -51,6 +51,23 @@ $router->post('/order/service/{id}', 'User/ShopController@buyService');
 $router->get('/my-orders', 'User/OrderController@index');
 $router->get('/profile', 'User/ProfileController@index');
 
+// --- Banking Routes ---
+$router->get('/banking', 'User/BankingController@index');
+$router->post('/banking/create', 'User/BankingController@createInvoice');
+$router->post('/banking/check-status', 'User/BankingController@checkStatus');
+$router->get('/banking/history', 'User/BankingController@history');
+
+// --- Page & Feature Routes ---
+$router->get('/search', 'User/PageController@search');
+$router->get('/leaderboard', 'User/PageController@leaderboard');
+$router->get('/guide', 'User/PageController@guide');
+$router->get('/contact', 'User/PageController@contact');
+$router->post('/contact/send', 'User/PageController@submitContact');
+$router->get('/lucky-wheel', 'User/LuckyWheelController@index');
+$router->post('/lucky-wheel/spin', 'User/LuckyWheelController@spin');
+$router->get('/mystery-bag', 'User/MysteryBagController@index');
+$router->post('/mystery-bag/open/{id}', 'User/MysteryBagController@open');
+
 // --- Admin Routes ---
 $router->get('/admin', 'Admin/DashboardController@index');
 

@@ -1,0 +1,206 @@
+<?php
+
+require_once BASE_PATH . '/core/Controller.php';
+require_once BASE_PATH . '/app/Middleware/AuthMiddleware.php';
+
+class BankingController extends Controller
+{
+    public function __construct()
+    {
+        AuthMiddleware::requireLogin();
+    }
+
+    /**
+     * Trang nạp tiền
+     */
+    public function index()
+    {
+        $settingModel = $this->model('Setting');
+        $invoiceModel = $this->model('Invoice');
+
+        $userId = $_SESSION['user_id'];
+        $invoices = $invoiceModel->getUserInvoices($userId);
+
+        $bankPrefix = strtoupper($settingModel->get('bank_prefix', 'NAP'));
+        $transferContent = $bankPrefix . $userId; // VD: NAP59
+
+        $bankConfig = [
+            'bank_name' => $settingModel->get('bank_name', 'MBBank'),
+            'bank_acc_name' => $settingModel->get('bank_acc_name', 'NGUYEN NHAT LOC'),
+            'bank_acc_number' => $settingModel->get('bank_acc_number', '90919072000'),
+            'bank_prefix' => $bankPrefix,
+            'transfer_content' => $transferContent
+        ];
+
+        $this->view('user.banking', [
+            'pageTitle' => 'Nạp tiền vào tài khoản',
+            'invoices' => $invoices,
+            'bankConfig' => $bankConfig,
+            'transferContent' => $transferContent
+        ]);
+    }
+
+    /**
+     * Xử lý tạo hóa đơn nạp tiền
+     */
+    public function createInvoice()
+    {
+        if (!verifyCsrf()) {
+            $this->json(['status' => 'error', 'message' => 'Phiên làm việc hết hạn']);
+            return;
+        }
+
+        $amount = intval($_POST['amount'] ?? 0);
+        $method = trim($_POST['method'] ?? 'MBBank');
+
+        if ($amount < 10000) {
+            $this->json(['status' => 'error', 'message' => 'Số tiền nạp tối thiểu là 10,000đ']);
+            return;
+        }
+
+        $invoiceModel = $this->model('Invoice');
+        $userId = $_SESSION['user_id'];
+
+        // Giới hạn 3 invoice pending
+        $pendingCount = $invoiceModel->count(['user_id' => $userId, 'status' => 0]);
+        if ($pendingCount >= 3) {
+            $this->json(['status' => 'error', 'message' => 'Bạn có quá nhiều giao dịch đang chờ xử lý.']);
+            return;
+        }
+
+        $invoice = $invoiceModel->createInvoice($userId, $amount, $method);
+
+        if ($invoice) {
+            $this->json([
+                'status' => 'success',
+                'message' => 'Tạo hóa đơn thành công! Nội dung CK: ' . $invoice['trans_id'],
+                'redirect' => url('/banking')
+            ]);
+        } else {
+            $this->json(['status' => 'error', 'message' => 'Có lỗi xảy ra, vui lòng thử lại']);
+        }
+    }
+
+    /**
+     * Kiểm tra trạng thái nạp tiền (user bấm nút "Kiểm tra")
+     * Gọi API ngân hàng real-time 1 lần để check
+     */
+    public function checkStatus()
+    {
+        $userId = $_SESSION['user_id'];
+        $invoiceModel = $this->model('Invoice');
+        $userModel = $this->model('User');
+        $transModel = $this->model('Transaction');
+        $settingModel = $this->model('Setting');
+
+        $prefix = strtoupper($settingModel->get('bank_prefix', 'NAP'));
+        $transId = $prefix . $userId;
+
+        // Tìm invoice pending của user này
+        $invoice = $invoiceModel->findOneWhere([
+            'trans_id' => $transId,
+            'status' => 0
+        ]);
+
+        if (!$invoice) {
+            $this->json(['status' => 'info', 'message' => 'Không có hoá đơn nào đang chờ xử lý.']);
+            return;
+        }
+
+        // Gọi API ngân hàng
+        $apiUrl = env('BANK_API_URL', '');
+        $apiToken = env('BANK_API_TOKEN', '');
+
+        if (empty($apiToken) || $apiToken === 'your_api_token_here') {
+            $this->json(['status' => 'warning', 'message' => 'Hệ thống đang bảo trì API ngân hàng. Vui lòng chờ cron tự động xử lý.']);
+            return;
+        }
+
+        $fullUrl = $apiUrl . '/' . $apiToken;
+        $response = @file_get_contents($fullUrl);
+
+        if (!$response) {
+            $this->json(['status' => 'warning', 'message' => 'Không thể kết nối API ngân hàng. Vui lòng thử lại sau.']);
+            return;
+        }
+
+        $data = json_decode($response, true);
+        if (!$data || ($data['status'] ?? '') !== 'success') {
+            $this->json(['status' => 'warning', 'message' => 'API ngân hàng không phản hồi. Thử lại sau.']);
+            return;
+        }
+
+        $transactions = $data['transactions'] ?? [];
+        $found = false;
+
+        foreach ($transactions as $tx) {
+            if (($tx['type'] ?? '') !== 'IN')
+                continue;
+
+            $txId = $tx['transactionID'] ?? '';
+            $txAmount = intval($tx['amount'] ?? 0);
+            $txDesc = strtoupper($tx['description'] ?? '');
+
+            // Đã xử lý rồi?
+            if ($invoiceModel->isTransactionProcessed($txId))
+                continue;
+
+            // Khớp nội dung CK?
+            if (strpos($txDesc, strtoupper($transId)) === false)
+                continue;
+
+            // Số tiền đủ?
+            if ($txAmount < intval($invoice['pay']))
+                continue;
+
+            // ✅ Khớp! Cộng tiền
+            $invoiceModel->update($invoice['id'], [
+                'status' => 1,
+                'tid' => $txId
+            ]);
+
+            $userModel->updateBalance($userId, intval($invoice['pay']));
+            $newBalance = $userModel->getBalance($userId);
+            $_SESSION['user_balance'] = $newBalance;
+
+            $transModel->log(
+                $userId,
+                'deposit',
+                intval($invoice['pay']),
+                $newBalance,
+                'Nạp tiền tự động - Mã GD: ' . $txId
+            );
+
+            $found = true;
+            $this->json([
+                'status' => 'success',
+                'message' => 'Nạp thành công ' . formatMoney($invoice['pay']) . '! Số dư mới: ' . formatMoney($newBalance),
+                'balance' => formatMoney($newBalance)
+            ]);
+            return;
+        }
+
+        if (!$found) {
+            $this->json([
+                'status' => 'pending',
+                'message' => 'Chưa tìm thấy giao dịch khớp. Hãy đảm bảo nội dung CK là "' . $transId . '" và thử lại sau 1-2 phút.'
+            ]);
+        }
+    }
+
+    /**
+     * Trang lịch sử nạp
+     */
+    public function history()
+    {
+        $invoiceModel = $this->model('Invoice');
+        $userId = $_SESSION['user_id'];
+
+        $invoices = $invoiceModel->getUserInvoices($userId);
+
+        $this->view('user.deposit_history', [
+            'pageTitle' => 'Lịch sử nạp tiền',
+            'invoices' => $invoices
+        ]);
+    }
+}

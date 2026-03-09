@@ -33,10 +33,32 @@
                 <li><a href="<?= url('/shop/services') ?>"
                         class="<?= strpos($_SERVER['REQUEST_URI'], '/shop/services') !== false ? 'active' : '' ?>"><i
                             class="fas fa-share-nodes"></i> Dịch vụ MXH</a></li>
+                <li><a href="<?= url('/search') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/search') !== false ? 'active' : '' ?>"><i
+                            class="fas fa-search"></i> Tìm kiếm</a></li>
+                <li><a href="<?= url('/leaderboard') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/leaderboard') !== false ? 'active' : '' ?>"><i
+                            class="fas fa-trophy"></i> BXH Nạp</a></li>
+                <li><a href="<?= url('/lucky-wheel') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/lucky-wheel') !== false ? 'active' : '' ?>"><i
+                            class="fas fa-dharmachakra"></i> Vòng quay</a></li>
+                <li><a href="<?= url('/mystery-bag') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/mystery-bag') !== false ? 'active' : '' ?>"><i
+                            class="fas fa-box-open"></i> Túi mù</a></li>
+                <li><a href="<?= url('/guide') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/guide') !== false ? 'active' : '' ?>"><i
+                            class="fas fa-book"></i> Hướng dẫn</a></li>
+                <li><a href="<?= url('/contact') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/contact') !== false ? 'active' : '' ?>"><i
+                            class="fas fa-headset"></i> Liên hệ</a></li>
             </ul>
 
             <div class="navbar-actions">
                 <?php if (isLoggedIn()): ?>
+                    <a href="<?= url('/banking') ?>" class="btn btn-sm"
+                        style="background: rgba(0, 212, 170, 0.1); color: var(--accent-success); border: 1px solid rgba(0,212,170,0.2);">
+                        <i class="fas fa-plus-circle"></i> Nạp tiền
+                    </a>
                     <div class="user-balance">
                         <i class="fas fa-wallet"></i>
                         <?= formatMoney($_SESSION['user_balance'] ?? 0) ?>

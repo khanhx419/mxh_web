@@ -88,6 +88,34 @@
                     </a>
                 </li>
             </ul>
+
+            <div class="sidebar-label">TÀI CHÍNH & SỰ KIỆN</div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="<?= url('/admin/invoices') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/admin/invoices') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-file-invoice-dollar"></i> Quản lý Nạp tiền
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= url('/admin/lucky-wheel') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/admin/lucky-wheel') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-dharmachakra"></i> Vòng quay
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= url('/admin/mystery-bag') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/admin/mystery-bag') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-box-open"></i> Túi mù
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= url('/admin/settings') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/admin/settings') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-cogs"></i> Cấu hình
+                    </a>
+                </li>
+            </ul>
         </aside>
 
         <!-- Content -->
