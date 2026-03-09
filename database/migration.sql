@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS `transactions` (
 
 -- Admin mặc định (password: admin123)
 INSERT INTO `users` (`username`, `email`, `password`, `role`, `balance`) VALUES
-('admin', 'admin@shopacc.vn', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 0.00);
+('admin', 'admin@shopacc.vn', '$2y$10$fCJ7U47jrVBSybu/04gWLuJ84LVyoYNfLeewC5GfvUPtYr42kE2FO', 'admin', 0.00);
 
 -- Danh mục mẫu
 INSERT INTO `categories` (`name`, `type`, `icon`, `status`) VALUES
