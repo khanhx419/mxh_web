@@ -24,7 +24,7 @@ class Order extends Model
     /**
      * Tạo đơn dịch vụ MXH
      */
-    public function createServiceOrder($userId, $serviceId, $quantity, $targetLink, $totalPrice)
+    public function createServiceOrder($userId, $serviceId, $quantity, $targetLink, $totalPrice, $smmOrderId = null)
     {
         return $this->create([
             'user_id' => $userId,
@@ -33,8 +33,38 @@ class Order extends Model
             'quantity' => $quantity,
             'target_link' => $targetLink,
             'total_price' => $totalPrice,
-            'status' => 'pending'
+            'status' => 'pending',
+            'smm_order_id' => $smmOrderId
         ]);
+    }
+
+    /**
+     * Lấy đơn SMM đang chờ xử lý (chưa completed/cancelled)
+     */
+    public function getPendingSmmOrders()
+    {
+        $sql = "SELECT * FROM orders
+                WHERE order_type = 'service'
+                  AND smm_order_id IS NOT NULL
+                  AND status NOT IN ('completed', 'cancelled')
+                ORDER BY created_at ASC LIMIT 50";
+        $stmt = $this->db->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cập nhật thông tin SMM
+     */
+    public function updateSmmStatus($id, $smmStatus, $startCount = null, $remains = null, $status = null)
+    {
+        $data = ['smm_status' => $smmStatus];
+        if ($startCount !== null)
+            $data['start_count'] = $startCount;
+        if ($remains !== null)
+            $data['remains'] = $remains;
+        if ($status !== null)
+            $data['status'] = $status;
+        return $this->update($id, $data);
     }
 
     /**

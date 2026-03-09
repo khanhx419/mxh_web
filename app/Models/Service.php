@@ -55,4 +55,18 @@ class Service extends Model
         $stmt = $this->db->query($sql);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Tìm dịch vụ theo SMM service ID (ID trên web mẹ)
+     */
+    public function findBySmmId($smmServiceId)
+    {
+        $sql = "SELECT s.*, c.name as category_name 
+                FROM services s 
+                JOIN categories c ON s.category_id = c.id 
+                WHERE s.smm_service_id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$smmServiceId]);
+        return $stmt->fetch();
+    }
 }

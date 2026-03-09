@@ -143,7 +143,7 @@ class ShopController extends Controller
     }
 
     /**
-     * Mua dịch vụ MXH
+     * Mua dịch vụ MXH - Tự động đẩy đơn lên web mẹ
      */
     public function buyService($id)
     {
@@ -191,16 +191,40 @@ class ShopController extends Controller
         $newBalance = $userModel->getBalance($userId);
         $_SESSION['user_balance'] = $newBalance;
 
-        // Tạo đơn hàng
+        // ============================================================
+        // Đẩy đơn lên web mẹ (nếu dịch vụ có smm_service_id)
+        // ============================================================
+        $smmOrderId = null;
+        $smmServiceId = $service['smm_service_id'] ?? null;
+
+        if ($smmServiceId) {
+            require_once BASE_PATH . '/app/Services/SmmApiService.php';
+            $smm = new SmmApiService();
+            $apiResult = $smm->addOrder($smmServiceId, $targetLink, $quantity);
+
+            if (isset($apiResult['order'])) {
+                $smmOrderId = intval($apiResult['order']);
+            } else {
+                // API lỗi → vẫn tạo đơn nội bộ, admin xử lý thủ công
+                $errorMsg = $apiResult['error'] ?? 'Unknown API error';
+                error_log("[SMM API Error] Service #{$id}, User #{$userId}: {$errorMsg}");
+            }
+        }
+
+        // Tạo đơn hàng (với smm_order_id nếu có)
         $orderModel = $this->model('Order');
-        $orderModel->createServiceOrder($userId, $id, $quantity, $targetLink, $totalPrice);
+        $orderModel->createServiceOrder($userId, $id, $quantity, $targetLink, $totalPrice, $smmOrderId);
 
         // Ghi giao dịch
         require_once BASE_PATH . '/app/Models/Transaction.php';
         $transModel = new Transaction();
         $transModel->log($userId, 'purchase', $totalPrice, $newBalance, 'Dịch vụ: ' . $service['name'] . ' x' . number_format($quantity));
 
-        setFlash('success', 'Đặt dịch vụ thành công! Đơn hàng đang chờ xử lý.');
+        if ($smmOrderId) {
+            setFlash('success', 'Đặt dịch vụ thành công! Đơn hàng #' . $smmOrderId . ' đang được xử lý tự động.');
+        } else {
+            setFlash('success', 'Đặt dịch vụ thành công! Đơn hàng đang chờ xử lý.');
+        }
         redirect('/my-orders');
     }
 }
