@@ -48,14 +48,15 @@ class PageController extends Controller
     }
 
     /**
-     * Bảng xếp hạng nạp
+     * Bảng xếp hạng - Enhanced with tabs
      */
     public function leaderboard()
     {
         $userModel = $this->model('User');
+        $db = $userModel->getDb();
 
-        // Mặc định tính tổng nạp từ bảng transactions loại 'deposit'
-        $stmt = $userModel->getDb()->query("
+        // Top Nạp (deposit)
+        $stmt = $db->query("
             SELECT u.id, u.username, SUM(t.amount) as total_deposit 
             FROM users u 
             JOIN transactions t ON u.id = t.user_id 
@@ -64,11 +65,86 @@ class PageController extends Controller
             ORDER BY total_deposit DESC 
             LIMIT 10
         ");
-        $topUsers = $stmt->fetchAll();
+        $topDeposit = $stmt->fetchAll();
+
+        // Top Chi Tiêu (spending)
+        $stmt2 = $db->query("
+            SELECT u.id, u.username, SUM(o.total_price) as total_spending
+            FROM users u 
+            JOIN orders o ON u.id = o.user_id 
+            WHERE o.status = 'completed'
+            GROUP BY u.id 
+            ORDER BY total_spending DESC 
+            LIMIT 10
+        ");
+        $topSpending = $stmt2->fetchAll();
+
+        // Top Điểm Xanh
+        $topPoints = [];
+        try {
+            $greenPointModel = $this->model('GreenPoint');
+            $topPoints = $greenPointModel->getTopUsers(10);
+        } catch (Exception $e) {
+            // Table may not exist yet
+        }
 
         $this->view('user.leaderboard', [
-            'pageTitle' => 'Bảng Xếp Hạng Nạp',
-            'topUsers' => $topUsers
+            'pageTitle' => 'Bảng Xếp Hạng',
+            'topDeposit' => $topDeposit,
+            'topSpending' => $topSpending,
+            'topPoints' => $topPoints
+        ]);
+    }
+
+    /**
+     * Trang Sự kiện
+     */
+    public function events()
+    {
+        $activeEvents = [];
+        $upcomingEvents = [];
+
+        try {
+            $eventModel = $this->model('Event');
+            $activeEvents = $eventModel->getActive();
+            $upcomingEvents = $eventModel->getUpcoming();
+        } catch (Exception $e) {
+            // Table may not exist yet
+        }
+
+        $this->view('user.events', [
+            'pageTitle' => 'Sự Kiện',
+            'activeEvents' => $activeEvents,
+            'upcomingEvents' => $upcomingEvents
+        ]);
+    }
+
+    /**
+     * Trang Điểm xanh
+     */
+    public function greenPoints()
+    {
+        if (!isLoggedIn()) {
+            setFlash('warning', 'Vui lòng đăng nhập để xem điểm xanh.');
+            redirect('/login');
+        }
+
+        $userId = $_SESSION['user_id'];
+        $totalPoints = 0;
+        $history = [];
+
+        try {
+            $greenPointModel = $this->model('GreenPoint');
+            $totalPoints = $greenPointModel->getUserTotal($userId);
+            $history = $greenPointModel->getHistory($userId);
+        } catch (Exception $e) {
+            // Table may not exist yet
+        }
+
+        $this->view('user.green_points', [
+            'pageTitle' => 'Điểm Xanh',
+            'totalPoints' => $totalPoints,
+            'history' => $history
         ]);
     }
 

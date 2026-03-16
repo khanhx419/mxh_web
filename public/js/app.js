@@ -1,9 +1,71 @@
 /**
- * ShopAcc VN - Main JavaScript
+ * ShopAcc VN - Main JavaScript v2.0
+ * Sidebar + Theme Toggle + Utilities
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-dismiss alerts after 5 seconds
+
+    // ==========================================
+    // THEME TOGGLE
+    // ==========================================
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        });
+    }
+
+    // ==========================================
+    // SIDEBAR TOGGLE (Mobile)
+    // ==========================================
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    function openSidebar() {
+        if (sidebar) sidebar.classList.add('open');
+        if (sidebarOverlay) sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('open');
+        if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            if (sidebar && sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+    }
+
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar on nav link click (mobile)
+    if (sidebar) {
+        sidebar.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
+    }
+
+    // ==========================================
+    // AUTO-DISMISS ALERTS
+    // ==========================================
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
         setTimeout(() => {
@@ -13,7 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     });
 
-    // Confirm delete actions
+    // ==========================================
+    // CONFIRM DELETE ACTIONS
+    // ==========================================
     const deleteLinks = document.querySelectorAll('[data-confirm]');
     deleteLinks.forEach(link => {
         link.addEventListener('click', function(e) {
@@ -24,7 +88,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Image preview on file input
+    // ==========================================
+    // IMAGE PREVIEW ON FILE INPUT
+    // ==========================================
     const imageInputs = document.querySelectorAll('input[type="file"][data-preview]');
     imageInputs.forEach(input => {
         input.addEventListener('change', function() {
@@ -41,7 +107,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Format money inputs
+    // ==========================================
+    // FORMAT MONEY INPUTS
+    // ==========================================
     const moneyInputs = document.querySelectorAll('.money-input');
     moneyInputs.forEach(input => {
         input.addEventListener('input', function() {
@@ -50,7 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Calculate total for service orders
+    // ==========================================
+    // SERVICE ORDER TOTAL CALCULATOR
+    // ==========================================
     const quantityInput = document.getElementById('quantity');
     const priceDisplay = document.getElementById('totalPrice');
     const pricePerUnit = document.getElementById('pricePerUnit');
@@ -63,4 +133,23 @@ document.addEventListener('DOMContentLoaded', function() {
             priceDisplay.textContent = new Intl.NumberFormat('vi-VN').format(total) + 'đ';
         });
     }
+
+    // ==========================================
+    // LEADERBOARD TABS
+    // ==========================================
+    const lbTabs = document.querySelectorAll('.leaderboard-tab');
+    const lbPanels = document.querySelectorAll('.leaderboard-panel');
+    
+    lbTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const target = this.dataset.tab;
+            
+            lbTabs.forEach(t => t.classList.remove('active'));
+            lbPanels.forEach(p => p.style.display = 'none');
+            
+            this.classList.add('active');
+            const panel = document.getElementById(target);
+            if (panel) panel.style.display = 'block';
+        });
+    });
 });

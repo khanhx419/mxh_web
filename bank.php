@@ -31,6 +31,7 @@ require_once BASE_PATH . '/app/Models/User.php';
 require_once BASE_PATH . '/app/Models/Invoice.php';
 require_once BASE_PATH . '/app/Models/Transaction.php';
 require_once BASE_PATH . '/app/Models/Setting.php';
+require_once BASE_PATH . '/app/Services/TelegramService.php';
 
 // ============================================================
 // Cấu hình API
@@ -171,6 +172,15 @@ foreach ($transactions as $tx) {
 
     // Xoá invoice khỏi map để không match lại
     unset($invoiceMap[strtoupper($matchedInvoice['trans_id'])]);
+
+    // Gửi thông báo Telegram
+    try {
+        $telegram = new TelegramService();
+        $user = $userModel->findById($userId);
+        $telegram->notifyDeposit($userId, $user['username'] ?? 'User#'.$userId, $payAmount, $txId, $newBalance);
+    } catch (Exception $e) {
+        echo "⚠ Telegram notification failed: " . $e->getMessage() . "\n";
+    }
 
     $processedCount++;
     echo "✅ Nạp thành công: User #{$userId} | +{$payAmount}đ | GD: {$txId} | HĐ: #{$matchedInvoice['trans_id']}\n";

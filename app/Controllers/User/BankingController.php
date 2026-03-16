@@ -116,11 +116,31 @@ class BankingController extends Controller
             return;
         }
 
+        // Dùng cURL thay vì file_get_contents cho độ tin cậy cao hơn
         $fullUrl = $apiUrl . '/' . $apiToken;
-        $response = @file_get_contents($fullUrl);
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $fullUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json'
+            ]
+        ]);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
 
-        if (!$response) {
+        if ($curlError || !$response) {
             $this->json(['status' => 'warning', 'message' => 'Không thể kết nối API ngân hàng. Vui lòng thử lại sau.']);
+            return;
+        }
+
+        if ($httpCode !== 200) {
+            $this->json(['status' => 'warning', 'message' => 'API ngân hàng trả về lỗi (HTTP ' . $httpCode . '). Thử lại sau.']);
             return;
         }
 
@@ -170,6 +190,21 @@ class BankingController extends Controller
                 $newBalance,
                 'Nạp tiền tự động - Mã GD: ' . $txId
             );
+
+            // Gửi thông báo Telegram
+            try {
+                require_once BASE_PATH . '/app/Services/TelegramService.php';
+                $telegram = new TelegramService();
+                $telegram->notifyDeposit(
+                    $userId,
+                    $_SESSION['username'] ?? 'User#' . $userId,
+                    intval($invoice['pay']),
+                    $txId,
+                    $newBalance
+                );
+            } catch (Exception $e) {
+                // Không block flow nếu Telegram lỗi
+            }
 
             $found = true;
             $this->json([

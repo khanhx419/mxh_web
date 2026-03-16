@@ -1,61 +1,147 @@
-<div class="container py-4">
-    <div class="section-title text-center mb-5">
-        <i class="fas fa-trophy text-warning" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
-        <h2>Top Đại Gia Nạp Tiền</h2>
-        <p class="text-secondary mt-2">Bảng vinh danh những người dùng có tổng tiền nạp cao nhất hệ thống</p>
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-trophy" style="color: var(--accent-warning);"></i> Bảng Xếp Hạng</h1>
+        <p class="text-secondary">Top người dùng nổi bật trên hệ thống</p>
     </div>
 
-    <div class="card leaderboard-card mx-auto" style="max-width: 800px; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        <div class="card-body p-0">
-            <table class="table mb-0 leaderboard-table">
-                <thead style="background: var(--bg-card); border-bottom: 2px solid var(--border-color);">
-                    <tr>
-                        <th class="text-center py-4" style="width: 15%">Hạng</th>
-                        <th class="py-4">Người dùng</th>
-                        <th class="text-right py-4" style="width: 35%">Tổng nạp</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($topUsers)): ?>
-                        <tr><td colspan="3" class="text-center py-5">Chưa có dữ liệu nạp tiền</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($topUsers as $index => $user): ?>
-                            <tr class="rank-row <?= $index < 3 ? 'top-3 bg-dark-gradient' : '' ?>" style="transition: all 0.3s; <?= $index < 3 ? 'border-left: 4px solid '.($index==0?'#ffd700':($index==1?'#c0c0c0':'#cd7f32')).';' : '' ?>">
-                                <td class="text-center py-3">
-                                    <?php if ($index == 0): ?>
-                                        <i class="fas fa-crown text-warning" style="font-size: 1.5rem;"></i>
-                                    <?php elseif ($index == 1): ?>
-                                        <i class="fas fa-medal text-light" style="font-size: 1.5rem;"></i>
-                                    <?php elseif ($index == 2): ?>
-                                        <i class="fas fa-award" style="color: #cd7f32; font-size: 1.5rem;"></i>
+    <div class="leaderboard-card">
+        <!-- Tabs -->
+        <div class="leaderboard-tabs">
+            <button class="leaderboard-tab active" data-tab="tab-deposit">
+                <i class="fas fa-coins"></i> Top Nạp
+            </button>
+            <button class="leaderboard-tab" data-tab="tab-spending">
+                <i class="fas fa-shopping-cart"></i> Top Chi Tiêu
+            </button>
+            <button class="leaderboard-tab" data-tab="tab-points">
+                <i class="fas fa-leaf"></i> Top Điểm Xanh
+            </button>
+        </div>
+
+        <!-- Tab: Top Nạp -->
+        <div class="leaderboard-panel" id="tab-deposit">
+            <?php if (empty($topDeposit)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-trophy"></i>
+                    <h3>Chưa có dữ liệu</h3>
+                </div>
+            <?php else: ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>Người dùng</th>
+                            <th class="text-right">Tổng nạp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($topDeposit as $i => $user): ?>
+                            <tr class="rank-row">
+                                <td>
+                                    <?php if ($i < 3): ?>
+                                        <span class="rank-badge rank-<?= $i + 1 ?>"><?= $i + 1 ?></span>
                                     <?php else: ?>
-                                        <span class="badge badge-secondary" style="font-size: 1.1rem;"><?= $index + 1 ?></span>
+                                        <span style="color: var(--text-muted); font-weight: 600; padding-left: 8px;"><?= $i + 1 ?></span>
                                     <?php endif; ?>
                                 </td>
-                                
-                                <td class="py-3 font-weight-bold" style="font-size: 1.1rem; <?= $index < 3 ? 'color: var(--accent-primary);' : '' ?>">
-                                    <i class="fas fa-user-circle mr-2 text-secondary"></i>
-                                    <?= e($user['username']) ?>
+                                <td>
+                                    <span style="font-weight: 600;">
+                                        <i class="fas fa-user-circle" style="color: var(--text-muted); margin-right: 4px;"></i>
+                                        <?= e($user['username']) ?>
+                                    </span>
                                 </td>
-                                
-                                <td class="text-right py-3 font-weight-bold" style="font-size: 1.2rem; color: var(--accent-success);">
+                                <td class="text-right" style="font-weight: 700; color: var(--accent-success);">
                                     <?= formatMoney($user['total_deposit']) ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <!-- Tab: Top Chi Tiêu -->
+        <div class="leaderboard-panel" id="tab-spending" style="display: none;">
+            <?php if (empty($topSpending)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>Chưa có dữ liệu</h3>
+                </div>
+            <?php else: ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>Người dùng</th>
+                            <th class="text-right">Tổng chi tiêu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($topSpending as $i => $user): ?>
+                            <tr class="rank-row">
+                                <td>
+                                    <?php if ($i < 3): ?>
+                                        <span class="rank-badge rank-<?= $i + 1 ?>"><?= $i + 1 ?></span>
+                                    <?php else: ?>
+                                        <span style="color: var(--text-muted); font-weight: 600; padding-left: 8px;"><?= $i + 1 ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600;">
+                                        <i class="fas fa-user-circle" style="color: var(--text-muted); margin-right: 4px;"></i>
+                                        <?= e($user['username']) ?>
+                                    </span>
+                                </td>
+                                <td class="text-right" style="font-weight: 700; color: var(--accent-info);">
+                                    <?= formatMoney($user['total_spending']) ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <!-- Tab: Top Điểm Xanh -->
+        <div class="leaderboard-panel" id="tab-points" style="display: none;">
+            <?php if (empty($topPoints)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-leaf"></i>
+                    <h3>Chưa có dữ liệu</h3>
+                </div>
+            <?php else: ?>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">#</th>
+                            <th>Người dùng</th>
+                            <th class="text-right">Điểm xanh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($topPoints as $i => $user): ?>
+                            <tr class="rank-row">
+                                <td>
+                                    <?php if ($i < 3): ?>
+                                        <span class="rank-badge rank-<?= $i + 1 ?>"><?= $i + 1 ?></span>
+                                    <?php else: ?>
+                                        <span style="color: var(--text-muted); font-weight: 600; padding-left: 8px;"><?= $i + 1 ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600;">
+                                        <i class="fas fa-user-circle" style="color: var(--text-muted); margin-right: 4px;"></i>
+                                        <?= e($user['username']) ?>
+                                    </span>
+                                </td>
+                                <td class="text-right" style="font-weight: 700; color: var(--accent-success);">
+                                    🍀 <?= number_format($user['green_points_total']) ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
         </div>
     </div>
 </div>
-
-<style>
-.leaderboard-table tr:hover {
-    background: rgba(255,255,255,0.05);
-    transform: scale(1.01);
-}
-.bg-dark-gradient {
-    background: linear-gradient(90deg, rgba(20,20,30,1) 0%, rgba(30,30,45,1) 100%);
-}
-</style>

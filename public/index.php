@@ -60,6 +60,8 @@ $router->get('/banking/history', 'User/BankingController@history');
 // --- Page & Feature Routes ---
 $router->get('/search', 'User/PageController@search');
 $router->get('/leaderboard', 'User/PageController@leaderboard');
+$router->get('/events', 'User/PageController@events');
+$router->get('/green-points', 'User/PageController@greenPoints');
 $router->get('/guide', 'User/PageController@guide');
 $router->get('/contact', 'User/PageController@contact');
 $router->post('/contact/send', 'User/PageController@submitContact');
