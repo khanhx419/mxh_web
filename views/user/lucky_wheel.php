@@ -213,6 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentAngle = 0;
     let isSpinning = false;
+    let currentCsrfToken = '<?= $_SESSION['csrf_token'] ?? '' ?>';
 
     // Draw the wheel
     function drawWheel(rotation) {
@@ -293,10 +294,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: `csrf_token=<?= $_SESSION['csrf_token'] ?? '' ?>`
+            body: `csrf_token=${currentCsrfToken}`
         })
         .then(res => res.json())
         .then(data => {
+            // Update token for next spin
+            if (data.new_csrf_token) {
+                currentCsrfToken = data.new_csrf_token;
+            }
+
             if (data.status === 'error') {
                 resultDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> ${data.message}</div>`;
                 spinBtn.disabled = false;

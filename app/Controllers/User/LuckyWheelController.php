@@ -41,12 +41,12 @@ class LuckyWheelController extends Controller
     public function spin()
     {
         if (!verifyCsrf()) {
-            $this->json(['status' => 'error', 'message' => 'Phiên làm việc hết hạn']);
+            $this->json(['status' => 'error', 'message' => 'Phiên làm việc hết hạn', 'new_csrf_token' => csrfToken()]);
             return;
         }
 
         if (!isLoggedIn()) {
-            $this->json(['status' => 'error', 'message' => 'Vui lòng đăng nhập để quay']);
+            $this->json(['status' => 'error', 'message' => 'Vui lòng đăng nhập để quay', 'new_csrf_token' => csrfToken()]);
             return;
         }
 
@@ -60,7 +60,7 @@ class LuckyWheelController extends Controller
         $userBalance = $userModel->getBalance($userId);
 
         if ($userBalance < $spinCost) {
-            $this->json(['status' => 'error', 'message' => 'Bạn không đủ tiền để quay. Vui lòng nạp thêm!']);
+            $this->json(['status' => 'error', 'message' => 'Bạn không đủ tiền để quay. Vui lòng nạp thêm!', 'new_csrf_token' => csrfToken()]);
             return;
         }
 
@@ -75,7 +75,7 @@ class LuckyWheelController extends Controller
         if (!$prize) {
             // Hoàn tiền nếu lỗi
             $userModel->updateBalance($userId, $spinCost);
-            $this->json(['status' => 'error', 'message' => 'Hệ thống vòng quay đang bảo trì']);
+            $this->json(['status' => 'error', 'message' => 'Hệ thống vòng quay đang bảo trì', 'new_csrf_token' => csrfToken()]);
             return;
         }
 
@@ -99,7 +99,8 @@ class LuckyWheelController extends Controller
             'prize_id' => $prize['id'],
             'prize_name' => $prize['name'],
             'message' => $message,
-            'balance' => formatMoney($_SESSION['user_balance'])
+            'balance' => formatMoney($_SESSION['user_balance']),
+            'new_csrf_token' => csrfToken()
         ]);
     }
 }
