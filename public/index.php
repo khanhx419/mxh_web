@@ -20,8 +20,17 @@ require_once BASE_PATH . '/core/Model.php';
 require_once BASE_PATH . '/core/Controller.php';
 require_once BASE_PATH . '/core/Router.php';
 
-// Start session
-session_start();
+// Start session (an toàn cho cPanel)
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+
+// Global Error Handler - chuyển PHP errors thành exceptions
+set_error_handler(function($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+try {
 
 // Khởi tạo Router
 $router = new Router();
@@ -109,3 +118,17 @@ $router->post('/admin/users/update-balance/{id}', 'Admin/UserController@updateBa
 
 // Dispatch
 $router->dispatch();
+
+} catch (Throwable $e) {
+    http_response_code(500);
+    if (defined('APP_DEBUG') && APP_DEBUG) {
+        echo '<div style="font-family:monospace;padding:20px;background:#1a1a2e;color:#e94560;">';
+        echo '<h1>⚠ Application Error</h1>';
+        echo '<p><strong>' . htmlspecialchars($e->getMessage()) . '</strong></p>';
+        echo '<p>File: ' . htmlspecialchars($e->getFile()) . ':' . $e->getLine() . '</p>';
+        echo '<pre style="color:#0f3460;background:#e0e0e0;padding:15px;overflow:auto;">' . htmlspecialchars($e->getTraceAsString()) . '</pre>';
+        echo '</div>';
+    } else {
+        require_once BASE_PATH . '/views/errors/500.php';
+    }
+}

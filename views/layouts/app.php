@@ -210,7 +210,57 @@
         </footer>
     </div>
 
+    <!-- Global Popup Notification -->
+    <div class="global-popup-overlay" id="globalPopupOverlay">
+        <div class="global-popup-content">
+            <button class="global-popup-close" id="globalPopupCloseBtn" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <!-- Gradient Header -->
+            <div class="global-popup-header">
+                <div class="global-popup-icon-ring">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <h3>THÔNG BÁO</h3>
+                <p class="global-popup-subtitle">Từ <?= e(APP_NAME) ?></p>
+            </div>
+
+            <!-- Body -->
+            <div class="global-popup-body">
+                <p class="popup-intro">Xin chào quý khách! Đây là thông tin liên hệ <strong>duy nhất</strong> của chúng tôi:</p>
+
+                <div class="popup-contact-cards">
+                    <div class="popup-contact-card">
+                        <div class="popup-contact-icon purple"><i class="fas fa-user"></i></div>
+                        <div class="popup-contact-info">
+                            <span class="popup-contact-label">Chủ shop</span>
+                            <span class="popup-contact-value">Bùi Đình Bình</span>
+                        </div>
+                    </div>
+                    <div class="popup-contact-card">
+                        <div class="popup-contact-icon green"><i class="fas fa-phone"></i></div>
+                        <div class="popup-contact-info">
+                            <span class="popup-contact-label">SĐT / Zalo</span>
+                            <span class="popup-contact-value">0377994308</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="popup-notice">
+                    <i class="fas fa-shield-halved"></i>
+                    <span>Cam kết chất lượng dịch vụ tốt nhất, giá cả hợp lý và bảo đảm quyền lợi cho khách hàng. Mọi giao dịch thông qua các kênh khác đều <strong>không thuộc trách nhiệm</strong> của shop.</span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="global-popup-footer">
+                <button class="btn popup-btn-close" id="globalPopupCloseBtn2"><i class="fas fa-times"></i> Đóng</button>
+                <button class="btn popup-btn-hide" id="globalPopupHide1hBtn"><i class="fas fa-clock"></i> Tắt Trong 1h</button>
+            </div>
+        </div>
+    </div>
+
     <script src="<?= asset('js/app.js') ?>"></script>
 </body>
-
 </html>

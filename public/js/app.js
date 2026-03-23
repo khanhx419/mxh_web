@@ -152,4 +152,54 @@ document.addEventListener('DOMContentLoaded', function() {
             if (panel) panel.style.display = 'block';
         });
     });
+
+    // ==========================================
+    // GLOBAL POPUP NOTIFICATION
+    // ==========================================
+    const globalPopupOverlay = document.getElementById('globalPopupOverlay');
+    const globalPopupCloseBtn = document.getElementById('globalPopupCloseBtn');
+    const globalPopupCloseBtn2 = document.getElementById('globalPopupCloseBtn2');
+    const globalPopupHide1hBtn = document.getElementById('globalPopupHide1hBtn');
+
+    if (globalPopupOverlay) {
+        const popupHideTime = localStorage.getItem('globalPopupHideTime');
+        const now = new Date().getTime();
+
+        // Check if popup should be shown
+        if (!popupHideTime || now > parseInt(popupHideTime)) {
+            setTimeout(() => {
+                globalPopupOverlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }, 600);
+        }
+
+        const closePopup = () => {
+            globalPopupOverlay.classList.remove('show');
+            document.body.style.overflow = '';
+        };
+
+        const hidePopup1h = () => {
+            const oneHour = 60 * 60 * 1000;
+            localStorage.setItem('globalPopupHideTime', new Date().getTime() + oneHour);
+            closePopup();
+        };
+
+        if (globalPopupCloseBtn) globalPopupCloseBtn.addEventListener('click', closePopup);
+        if (globalPopupCloseBtn2) globalPopupCloseBtn2.addEventListener('click', closePopup);
+        if (globalPopupHide1hBtn) globalPopupHide1hBtn.addEventListener('click', hidePopup1h);
+        
+        // Close when clicking outside
+        globalPopupOverlay.addEventListener('click', (e) => {
+            if (e.target === globalPopupOverlay) {
+                closePopup();
+            }
+        });
+
+        // Close on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && globalPopupOverlay.classList.contains('show')) {
+                closePopup();
+            }
+        });
+    }
 });
