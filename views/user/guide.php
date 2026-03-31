@@ -10,17 +10,17 @@
             <div class="card position-sticky" style="top: 100px;">
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush" id="guide-menu">
-                        <li class="list-group-item active"><a href="#guide-register"
-                                class="text-white text-decoration-none d-block"><i class="fas fa-user-plus mr-2"></i>
+                        <li class="list-group-item"><a href="#guide-register"
+                                class="text-decoration-none d-block"><i class="fas fa-user-plus mr-2"></i>
                                 Đăng ký & Đăng nhập</a></li>
                         <li class="list-group-item"><a href="#guide-deposit"
-                                class="text-white text-decoration-none d-block"><i class="fas fa-wallet mr-2"></i> Cách
+                                class="text-decoration-none d-block"><i class="fas fa-wallet mr-2"></i> Cách
                                 Nạp Tiền</a></li>
                         <li class="list-group-item"><a href="#guide-buy"
-                                class="text-white text-decoration-none d-block"><i
+                                class="text-decoration-none d-block"><i
                                     class="fas fa-shopping-cart mr-2"></i> Mua Tài Khoản</a></li>
                         <li class="list-group-item"><a href="#guide-service"
-                                class="text-white text-decoration-none d-block"><i class="fas fa-share-nodes mr-2"></i>
+                                class="text-decoration-none d-block"><i class="fas fa-share-nodes mr-2"></i>
                                 Thuê Dịch Vụ</a></li>
                     </ul>
                 </div>
@@ -49,8 +49,7 @@
                 </div>
             </div>
 
-            <div id="guide-deposit" class="card mb-4 pb-2 pt-2 mt-4"
-                style="border-left: 4px solid var(--accent-success)">
+            <div id="guide-deposit" class="card mb-4 mt-4">
                 <div class="card-body">
                     <h3 class="card-title text-success"><i class="fas fa-wallet"></i> 2. Cách Nạp Tiền (Tự Động)</h3>
                     <div class="guide-content mt-3">

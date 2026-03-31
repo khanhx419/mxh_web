@@ -67,4 +67,23 @@ class MysteryBag extends Model
         ]);
         return $db->lastInsertId();
     }
+
+    /**
+     * Ghi lịch sử mở túi (custom - không cần item từ DB)
+     */
+    public function logHistoryCustom($userId, $bagId, $itemName, $itemContent)
+    {
+        $db = $this->getDb();
+        $stmt = $db->prepare("
+            INSERT INTO mystery_bag_history (user_id, bag_id, item_id, item_name, item_content) 
+            VALUES (?, ?, 0, ?, ?)
+        ");
+        $stmt->execute([
+            $userId,
+            $bagId,
+            $itemName,
+            $itemContent
+        ]);
+        return $db->lastInsertId();
+    }
 }

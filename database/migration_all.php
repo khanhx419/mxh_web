@@ -1,16 +1,4 @@
 <?php
-/**
- * =============================================
- * ShopAcc VN - Full Database Migration
- * Gộp tất cả: migration.sql + run_migration.php + migration_v2.php
- * =============================================
- * 
- * Cách chạy:
- *   - Terminal: php database/migration_all.php
- *   - Hoặc truy cập URL (rồi xóa file sau)
- * 
- * ⚠️ XÓA FILE NÀY SAU KHI CHẠY XONG TRÊN PRODUCTION!
- */
 
 define('BASE_PATH', dirname(__DIR__));
 require_once BASE_PATH . '/app/Helpers/helpers.php';
@@ -18,22 +6,18 @@ require_once BASE_PATH . '/config/app.php';
 require_once BASE_PATH . '/config/database.php';
 
 $isWeb = php_sapi_name() !== 'cli';
-if ($isWeb) echo '<pre style="font-family:monospace;background:#1a1a2e;color:#00d4aa;padding:20px;">';
+if ($isWeb)
+    echo '<pre style="font-family:monospace;background:#1a1a2e;color:#00d4aa;padding:20px;">';
 
-function msg($text) {
+function msg($text)
+{
     echo $text . "\n";
 }
 
 try {
     $db = getDatabaseConnection();
     msg("✅ Kết nối database thành công!\n");
-
-    // =============================================
-    // PHẦN 1: Bảng nền tảng (từ migration.sql)
-    // =============================================
     msg("=== PHẦN 1: Bảng nền tảng ===");
-
-    // 1. Users
     $db->exec("
         CREATE TABLE IF NOT EXISTS `users` (
             `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -135,9 +119,6 @@ try {
     ");
     msg("✅ Table: transactions");
 
-    // =============================================
-    // PHẦN 2: Bảng mở rộng (từ run_migration.php)
-    // =============================================
     msg("\n=== PHẦN 2: Bảng mở rộng ===");
 
     // 7. Invoices
@@ -240,6 +221,35 @@ try {
     ");
     msg("✅ Table: mystery_bag_history");
 
+    // 13b. Daily Check-in (Điểm danh nhận lượt quay miễn phí)
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS `daily_checkin` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT NOT NULL,
+            `day_number` TINYINT NOT NULL COMMENT 'Ngày thứ mấy trong chu kỳ 7 ngày (1-7)',
+            `cycle_start` DATE NOT NULL COMMENT 'Ngày bắt đầu chu kỳ 7 ngày',
+            `free_spins_earned` INT NOT NULL DEFAULT 1,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    msg("✅ Table: daily_checkin");
+
+    // 13c. User Free Spins (Lượt quay miễn phí)
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS `user_free_spins` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `user_id` INT NOT NULL UNIQUE,
+            `free_spins` INT NOT NULL DEFAULT 0,
+            `last_checkin_date` DATE DEFAULT NULL,
+            `cycle_start` DATE DEFAULT NULL,
+            `current_day` TINYINT DEFAULT 0,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    ");
+    msg("✅ Table: user_free_spins");
+
     // 14. Contact Messages
     $db->exec("
         CREATE TABLE IF NOT EXISTS `contact_messages` (
@@ -254,10 +264,6 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
     msg("✅ Table: contact_messages");
-
-    // =============================================
-    // PHẦN 3: Events & Green Points (từ migration_v2.php)
-    // =============================================
     msg("\n=== PHẦN 3: Events & Green Points ===");
 
     // 15. Events
@@ -297,13 +303,10 @@ try {
     if (empty($cols)) {
         $db->exec("ALTER TABLE `users` ADD COLUMN `green_points_total` INT DEFAULT 0 AFTER `balance`");
         msg("✅ Thêm cột green_points_total vào users");
-    } else {
+    }
+    else {
         msg("⏭️ Cột green_points_total đã tồn tại");
     }
-
-    // =============================================
-    // PHẦN 4: Seed Data mẫu
-    // =============================================
     msg("\n=== PHẦN 4: Dữ liệu mẫu ===");
 
     // Settings mặc định
@@ -357,17 +360,15 @@ try {
         (3, 'Tích điểm xanh x3', 'Tất cả giao dịch trong sự kiện nhận x3 điểm xanh', '2026-03-15 00:00:00', '2026-03-30 23:59:59', 'points', 3, 1)
     ");
     msg("✅ Seed: events");
-
-    // =============================================
-    // HOÀN TẤT
-    // =============================================
     msg("\n🎉 ====================================");
-    msg("🎉 MIGRATION HOÀN TẤT - 16 bảng + seed data");
+    msg("🎉 MIGRATION HOÀN TẤT - 18 bảng + seed data");
     msg("🎉 ====================================");
     msg("\n⚠️ Nhớ XÓA FILE NÀY sau khi chạy xong!");
 
-} catch (PDOException $e) {
+}
+catch (PDOException $e) {
     msg("\n❌ Database Error: " . $e->getMessage());
 }
 
-if ($isWeb) echo '</pre>';
+if ($isWeb)
+    echo '</pre>';

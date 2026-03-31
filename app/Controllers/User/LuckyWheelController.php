@@ -14,24 +14,20 @@ class LuckyWheelController extends Controller
         $settingModel = $this->model('Setting');
 
         $prizes = $prizeModel->getActivePrizes();
-        $spinCost = $settingModel->get('wheel_spin_cost', 10000); // 10k 1 lượt mặc định
+        $spinCost = $settingModel->get('wheel_spin_cost', 10000);
 
-        // Lấy lịch sử trúng thưởng gần đây (của tất cả user)
-        $db = $prizeModel->getDb();
-        $stmt = $db->query("
-            SELECT h.*, u.username 
-            FROM lucky_wheel_history h 
-            JOIN users u ON h.user_id = u.id 
-            ORDER BY h.created_at DESC 
-            LIMIT 10
-        ");
-        $history = $stmt->fetchAll();
+        // Lấy lượt free
+        $freeSpins = 0;
+        if (isLoggedIn()) {
+            $checkinModel = $this->model('DailyCheckin');
+            $freeSpins = $checkinModel->getFreeSpins($_SESSION['user_id']);
+        }
 
         $this->view('user.lucky_wheel', [
             'pageTitle' => 'Vòng Quay May Mắn',
             'prizes' => $prizes,
             'spinCost' => $spinCost,
-            'history' => $history
+            'freeSpins' => $freeSpins
         ]);
     }
 
@@ -55,26 +51,34 @@ class LuckyWheelController extends Controller
         $prizeModel = $this->model('LuckyWheelPrize');
         $settingModel = $this->model('Setting');
         $transModel = $this->model('Transaction');
+        $checkinModel = $this->model('DailyCheckin');
 
         $spinCost = intval($settingModel->get('wheel_spin_cost', 10000));
         $userBalance = $userModel->getBalance($userId);
+        $freeSpins = $checkinModel->getFreeSpins($userId);
 
-        if ($userBalance < $spinCost) {
-            $this->json(['status' => 'error', 'message' => 'Bạn không đủ tiền để quay. Vui lòng nạp thêm!', 'new_csrf_token' => csrfToken()]);
+        // Ưu tiên dùng lượt free nếu có
+        $usedFreeSpin = false;
+        if ($freeSpins > 0) {
+            $checkinModel->useFreeSpin($userId);
+            $usedFreeSpin = true;
+        } elseif ($userBalance < $spinCost) {
+            $this->json(['status' => 'error', 'message' => 'Bạn không đủ tiền để quay. Hãy điểm danh để nhận lượt free!', 'new_csrf_token' => csrfToken()]);
             return;
+        } else {
+            // Trừ tiền quay
+            $userModel->updateBalance($userId, -$spinCost);
+            $newBalance = $userModel->getBalance($userId);
+            $transModel->log($userId, 'wheel_spin', $spinCost, $newBalance, 'Chơi vòng quay may mắn');
         }
-
-        // Trừ tiền quay
-        $userModel->updateBalance($userId, -$spinCost);
-        $newBalance = $userModel->getBalance($userId);
-        $transModel->log($userId, 'wheel_spin', $spinCost, $newBalance, 'Chơi vòng quay may mắn');
 
         // Quay thưởng
         $prize = $prizeModel->spin();
 
         if (!$prize) {
-            // Hoàn tiền nếu lỗi
-            $userModel->updateBalance($userId, $spinCost);
+            if (!$usedFreeSpin) {
+                $userModel->updateBalance($userId, $spinCost);
+            }
             $this->json(['status' => 'error', 'message' => 'Hệ thống vòng quay đang bảo trì', 'new_csrf_token' => csrfToken()]);
             return;
         }
@@ -88,10 +92,13 @@ class LuckyWheelController extends Controller
             $userModel->updateBalance($userId, $prize['value']);
             $finalBalance = $userModel->getBalance($userId);
             $transModel->log($userId, 'wheel_reward', $prize['value'], $finalBalance, 'Trúng thưởng vòng quay');
-            $message .= ' (Số dư: +' . formatMoney($prize['value']) . ')';
+            $message .= ' (+' . formatMoney($prize['value']) . ')';
         }
 
-        // Cập nhật session balance mới nhất
+        if ($usedFreeSpin) {
+            $message .= ' [Lượt free]';
+        }
+
         $_SESSION['user_balance'] = $userModel->getBalance($userId);
 
         $this->json([
@@ -100,6 +107,7 @@ class LuckyWheelController extends Controller
             'prize_name' => $prize['name'],
             'message' => $message,
             'balance' => formatMoney($_SESSION['user_balance']),
+            'free_spins' => $checkinModel->getFreeSpins($userId),
             'new_csrf_token' => csrfToken()
         ]);
     }

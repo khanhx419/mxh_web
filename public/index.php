@@ -78,6 +78,7 @@ $router->get('/lucky-wheel', 'User/LuckyWheelController@index');
 $router->post('/lucky-wheel/spin', 'User/LuckyWheelController@spin');
 $router->get('/mystery-bag', 'User/MysteryBagController@index');
 $router->post('/mystery-bag/open/{id}', 'User/MysteryBagController@open');
+$router->post('/mystery-bag/checkin', 'User/MysteryBagController@checkin');
 
 // --- Admin Routes ---
 $router->get('/admin', 'Admin/DashboardController@index');
@@ -115,6 +116,25 @@ $router->post('/admin/orders/update-status/{id}', 'Admin/OrderController@updateS
 $router->get('/admin/users', 'Admin/UserController@index');
 $router->get('/admin/users/{id}', 'Admin/UserController@show');
 $router->post('/admin/users/update-balance/{id}', 'Admin/UserController@updateBalance');
+
+// Admin - Invoices (Nạp tiền)
+$router->get('/admin/invoices', 'Admin/InvoiceController@index');
+
+// Admin - Lucky Wheel
+$router->get('/admin/lucky-wheel', 'Admin/LuckyWheelController@index');
+$router->post('/admin/lucky-wheel/update', 'Admin/LuckyWheelController@update');
+
+// Admin - Mystery Bag
+$router->get('/admin/mystery-bag', 'Admin/MysteryBagController@index');
+$router->get('/admin/mystery-bag/create', 'Admin/MysteryBagController@create');
+$router->post('/admin/mystery-bag/store', 'Admin/MysteryBagController@store');
+$router->get('/admin/mystery-bag/edit/{id}', 'Admin/MysteryBagController@edit');
+$router->post('/admin/mystery-bag/update/{id}', 'Admin/MysteryBagController@update');
+$router->get('/admin/mystery-bag/delete/{id}', 'Admin/MysteryBagController@delete');
+
+// Admin - Settings
+$router->get('/admin/settings', 'Admin/SettingsController@index');
+$router->post('/admin/settings/update', 'Admin/SettingsController@update');
 
 // Dispatch
 $router->dispatch();

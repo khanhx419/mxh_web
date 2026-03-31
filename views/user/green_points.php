@@ -71,7 +71,7 @@
                             <thead>
                                 <tr>
                                     <th>Thời gian</th>
-                                    <th>Lý do</th>
+                                    <th>Lịch sử nhận</th>
                                     <th class="text-right">Điểm</th>
                                 </tr>
                             </thead>
