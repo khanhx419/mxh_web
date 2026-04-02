@@ -32,11 +32,14 @@ class BankingController extends Controller
             'transfer_content' => $transferContent
         ];
 
+        $depositNotice = $settingModel->get('deposit_notice', 'Vui lòng nạp theo nội dung sau: [nội dung]. Nếu sau 10p tiền không vào tài khoản thì liên hệ admin.');
+
         $this->view('user.banking', [
             'pageTitle' => 'Nạp tiền vào tài khoản',
             'invoices' => $invoices,
             'bankConfig' => $bankConfig,
-            'transferContent' => $transferContent
+            'transferContent' => $transferContent,
+            'depositNotice' => $depositNotice
         ]);
     }
 

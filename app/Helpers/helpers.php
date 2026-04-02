@@ -193,3 +193,28 @@ function orderStatusLabel($status)
     ];
     return $labels[$status] ?? $status;
 }
+
+/**
+ * Lấy setting từ database nhanh (dùng trong layout)
+ */
+function app_setting($key, $default = null)
+{
+    static $settings = null;
+
+    if ($settings === null) {
+        $settings = [];
+        try {
+            $db = getDatabaseConnection();
+            $stmt = $db->query("SELECT name, value FROM settings");
+            if ($stmt) {
+                while ($row = $stmt->fetch()) {
+                    $settings[$row['name']] = $row['value'];
+                }
+            }
+        } catch (Exception $e) {
+            // Ignore
+        }
+    }
+
+    return $settings[$key] ?? $default;
+}

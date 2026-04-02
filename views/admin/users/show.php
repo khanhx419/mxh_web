@@ -57,7 +57,7 @@
         </div>
 
         <!-- Add Balance -->
-        <div class="card">
+        <div class="card mb-2">
             <div class="card-body">
                 <h3 class="mb-2"><i class="fas fa-wallet"></i> Nạp tiền</h3>
                 <form method="POST" action="<?= url('/admin/users/update-balance/' . $user['id']) ?>">
@@ -69,6 +69,26 @@
                     </div>
                     <button type="submit" class="btn btn-success btn-block">
                         <i class="fas fa-plus-circle"></i> Nạp tiền
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Spins -->
+        <div class="card">
+            <div class="card-body">
+                <h3 class="mb-2" style="color: var(--accent-warning);"><i class="fas fa-dharmachakra"></i> Thêm lượt quay</h3>
+                <p class="text-secondary" style="font-size: 0.85rem; margin-bottom: 12px;">
+                    Lượt quay hiện tại: <strong style="color: var(--accent-warning); font-size: 1.1rem;"><?= $freeSpins ?? 0 ?></strong>
+                </p>
+                <form method="POST" action="<?= url('/admin/users/add-spins/' . $user['id']) ?>">
+                    <?= csrfField() ?>
+                    <div class="form-group">
+                        <label>Số lượt quay thêm</label>
+                        <input type="number" name="spins" class="form-control" min="1" placeholder="VD: 5" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-block" style="color: #fff;">
+                        <i class="fas fa-plus"></i> Cộng lượt quay
                     </button>
                 </form>
             </div>

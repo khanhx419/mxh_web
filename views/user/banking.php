@@ -4,6 +4,18 @@
         <h2>Nạp Tiền Vào Tài Khoản</h2>
     </div>
 
+    <?php if (!empty($depositNotice)): ?>
+    <div class="alert alert-warning" style="border-left: 4px solid var(--accent-warning); background: rgba(245, 158, 11, 0.1); border-radius: 8px; margin-bottom: 20px; padding: 14px 18px; line-height: 1.6;">
+        <i class="fas fa-exclamation-triangle" style="color: var(--accent-warning); margin-right: 6px;"></i>
+        <strong style="color: var(--accent-warning);">LƯU Ý:</strong>
+        <?php
+            $notice = e($depositNotice);
+            $highlight = '<strong style="color: var(--accent-danger); font-size: 1.05em; letter-spacing: 1px; background: rgba(239,68,68,.1); padding: 2px 8px; border-radius: 4px;">' . e($transferContent) . '</strong>';
+            echo str_replace(['[nội dung của bạn]', '[nội dung]'], $highlight, $notice);
+        ?>
+    </div>
+    <?php endif; ?>
+
     <div class="grid-2">
         <!-- Bank Info Card -->
         <div class="card">

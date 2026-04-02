@@ -19,8 +19,13 @@
     <nav class="navbar">
         <div class="navbar-inner">
             <a href="<?= url('/admin') ?>" class="navbar-brand">
-                <i class="fas fa-bolt"></i>
-                <?= e(APP_NAME) ?> <span style="font-size: 0.7em; opacity: 0.7;">ADMIN</span>
+                <?php $siteLogo = app_setting('site_logo'); if ($siteLogo): ?>
+                    <img src="<?= asset($siteLogo) ?>" alt="Logo" style="max-height: 35px; border-radius: 4px;">
+                    <span style="font-size: 0.7em; opacity: 0.7;">ADMIN</span>
+                <?php else: ?>
+                    <i class="fas fa-bolt"></i>
+                    <?= e(APP_NAME) ?> <span style="font-size: 0.7em; opacity: 0.7;">ADMIN</span>
+                <?php endif; ?>
             </a>
 
             <div class="navbar-actions">

@@ -26,118 +26,123 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Global Error Handler - chuyển PHP errors thành exceptions
-set_error_handler(function($severity, $message, $file, $line) {
+set_error_handler(function ($severity, $message, $file, $line) {
     throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
 try {
 
-// Khởi tạo Router
-$router = new Router();
+    // Khởi tạo Router
+    $router = new Router();
 
-// =============================================
+    // =============================================
 // ROUTES DEFINITION
 // =============================================
 
-// --- Public Routes ---
-$router->get('/', 'HomeController@index');
+    // --- Public Routes ---
+    $router->get('/', 'HomeController@index');
 
-// --- Auth Routes ---
-$router->get('/login', 'AuthController@showLogin');
-$router->post('/login', 'AuthController@login');
-$router->get('/register', 'AuthController@showRegister');
-$router->post('/register', 'AuthController@register');
-$router->get('/logout', 'AuthController@logout');
+    // --- Auth Routes ---
+    $router->get('/login', 'AuthController@showLogin');
+    $router->post('/login', 'AuthController@login');
+    $router->get('/register', 'AuthController@showRegister');
+    $router->post('/register', 'AuthController@register');
+    $router->get('/logout', 'AuthController@logout');
 
-// --- User Routes ---
-$router->get('/shop', 'User/ShopController@index');
-$router->get('/shop/games', 'User/ShopController@games');
-$router->get('/shop/services', 'User/ShopController@services');
-$router->get('/product/{id}', 'User/ShopController@productDetail');
-$router->get('/service/{id}', 'User/ShopController@serviceDetail');
-$router->post('/order/product/{id}', 'User/ShopController@buyProduct');
-$router->post('/order/service/{id}', 'User/ShopController@buyService');
-$router->get('/my-orders', 'User/OrderController@index');
-$router->get('/profile', 'User/ProfileController@index');
+    // --- User Routes ---
+    $router->get('/shop', 'User/ShopController@index');
+    $router->get('/shop/games', 'User/ShopController@games');
+    $router->get('/shop/services', 'User/ShopController@services');
+    $router->get('/product/{id}', 'User/ShopController@productDetail');
+    $router->get('/service/{id}', 'User/ShopController@serviceDetail');
+    $router->post('/order/product/{id}', 'User/ShopController@buyProduct');
+    $router->post('/order/service/{id}', 'User/ShopController@buyService');
+    $router->get('/my-orders', 'User/OrderController@index');
+    $router->get('/profile', 'User/ProfileController@index');
 
-// --- Banking Routes ---
-$router->get('/banking', 'User/BankingController@index');
-$router->post('/banking/create', 'User/BankingController@createInvoice');
-$router->post('/banking/check-status', 'User/BankingController@checkStatus');
-$router->get('/banking/history', 'User/BankingController@history');
+    // --- Banking Routes ---
+    $router->get('/banking', 'User/BankingController@index');
+    $router->post('/banking/create', 'User/BankingController@createInvoice');
+    $router->post('/banking/check-status', 'User/BankingController@checkStatus');
+    $router->get('/banking/history', 'User/BankingController@history');
 
-// --- Page & Feature Routes ---
-$router->get('/search', 'User/PageController@search');
-$router->get('/leaderboard', 'User/PageController@leaderboard');
-$router->get('/events', 'User/PageController@events');
-$router->get('/green-points', 'User/PageController@greenPoints');
-$router->get('/guide', 'User/PageController@guide');
-$router->get('/contact', 'User/PageController@contact');
-$router->post('/contact/send', 'User/PageController@submitContact');
-$router->get('/lucky-wheel', 'User/LuckyWheelController@index');
-$router->post('/lucky-wheel/spin', 'User/LuckyWheelController@spin');
-$router->get('/mystery-bag', 'User/MysteryBagController@index');
-$router->post('/mystery-bag/open/{id}', 'User/MysteryBagController@open');
-$router->post('/mystery-bag/checkin', 'User/MysteryBagController@checkin');
+    // --- Page & Feature Routes ---
+    $router->get('/search', 'User/PageController@search');
+    $router->get('/leaderboard', 'User/PageController@leaderboard');
+    $router->get('/events', 'User/PageController@events');
+    $router->get('/green-points', 'User/PageController@greenPoints');
+    $router->get('/guide', 'User/PageController@guide');
+    $router->get('/contact', 'User/PageController@contact');
+    $router->post('/contact/send', 'User/PageController@submitContact');
+    $router->get('/lucky-wheel', 'User/LuckyWheelController@index');
+    $router->post('/lucky-wheel/spin', 'User/LuckyWheelController@spin');
+    $router->get('/mystery-bag', 'User/MysteryBagController@index');
+    $router->post('/mystery-bag/open/{id}', 'User/MysteryBagController@open');
+    $router->post('/mystery-bag/checkin', 'User/MysteryBagController@checkin');
 
-// --- Admin Routes ---
-$router->get('/admin', 'Admin/DashboardController@index');
+    // --- Chess ---
+    $router->get('/chess', 'User/ChessController@index');
+    $router->post('/chess/record-win', 'User/ChessController@recordWin');
 
-// Admin - Categories
-$router->get('/admin/categories', 'Admin/CategoryController@index');
-$router->get('/admin/categories/create', 'Admin/CategoryController@create');
-$router->post('/admin/categories/store', 'Admin/CategoryController@store');
-$router->get('/admin/categories/edit/{id}', 'Admin/CategoryController@edit');
-$router->post('/admin/categories/update/{id}', 'Admin/CategoryController@update');
-$router->get('/admin/categories/delete/{id}', 'Admin/CategoryController@delete');
+    // --- Admin Routes ---
+    $router->get('/admin', 'Admin/DashboardController@index');
 
-// Admin - Products
-$router->get('/admin/products', 'Admin/ProductController@index');
-$router->get('/admin/products/create', 'Admin/ProductController@create');
-$router->post('/admin/products/store', 'Admin/ProductController@store');
-$router->get('/admin/products/edit/{id}', 'Admin/ProductController@edit');
-$router->post('/admin/products/update/{id}', 'Admin/ProductController@update');
-$router->get('/admin/products/delete/{id}', 'Admin/ProductController@delete');
+    // Admin - Categories
+    $router->get('/admin/categories', 'Admin/CategoryController@index');
+    $router->get('/admin/categories/create', 'Admin/CategoryController@create');
+    $router->post('/admin/categories/store', 'Admin/CategoryController@store');
+    $router->get('/admin/categories/edit/{id}', 'Admin/CategoryController@edit');
+    $router->post('/admin/categories/update/{id}', 'Admin/CategoryController@update');
+    $router->get('/admin/categories/delete/{id}', 'Admin/CategoryController@delete');
 
-// Admin - Services
-$router->get('/admin/services', 'Admin/ServiceController@index');
-$router->get('/admin/services/create', 'Admin/ServiceController@create');
-$router->post('/admin/services/store', 'Admin/ServiceController@store');
-$router->get('/admin/services/edit/{id}', 'Admin/ServiceController@edit');
-$router->post('/admin/services/update/{id}', 'Admin/ServiceController@update');
-$router->get('/admin/services/delete/{id}', 'Admin/ServiceController@delete');
+    // Admin - Products
+    $router->get('/admin/products', 'Admin/ProductController@index');
+    $router->get('/admin/products/create', 'Admin/ProductController@create');
+    $router->post('/admin/products/store', 'Admin/ProductController@store');
+    $router->get('/admin/products/edit/{id}', 'Admin/ProductController@edit');
+    $router->post('/admin/products/update/{id}', 'Admin/ProductController@update');
+    $router->get('/admin/products/delete/{id}', 'Admin/ProductController@delete');
 
-// Admin - Orders
-$router->get('/admin/orders', 'Admin/OrderController@index');
-$router->get('/admin/orders/{id}', 'Admin/OrderController@show');
-$router->post('/admin/orders/update-status/{id}', 'Admin/OrderController@updateStatus');
+    // Admin - Services
+    $router->get('/admin/services', 'Admin/ServiceController@index');
+    $router->get('/admin/services/create', 'Admin/ServiceController@create');
+    $router->post('/admin/services/store', 'Admin/ServiceController@store');
+    $router->get('/admin/services/edit/{id}', 'Admin/ServiceController@edit');
+    $router->post('/admin/services/update/{id}', 'Admin/ServiceController@update');
+    $router->get('/admin/services/delete/{id}', 'Admin/ServiceController@delete');
 
-// Admin - Users
-$router->get('/admin/users', 'Admin/UserController@index');
-$router->get('/admin/users/{id}', 'Admin/UserController@show');
-$router->post('/admin/users/update-balance/{id}', 'Admin/UserController@updateBalance');
+    // Admin - Orders
+    $router->get('/admin/orders', 'Admin/OrderController@index');
+    $router->get('/admin/orders/{id}', 'Admin/OrderController@show');
+    $router->post('/admin/orders/update-status/{id}', 'Admin/OrderController@updateStatus');
 
-// Admin - Invoices (Nạp tiền)
-$router->get('/admin/invoices', 'Admin/InvoiceController@index');
+    // Admin - Users
+    $router->get('/admin/users', 'Admin/UserController@index');
+    $router->get('/admin/users/{id}', 'Admin/UserController@show');
+    $router->post('/admin/users/update-balance/{id}', 'Admin/UserController@updateBalance');
+    $router->post('/admin/users/add-spins/{id}', 'Admin/UserController@addSpins');
 
-// Admin - Lucky Wheel
-$router->get('/admin/lucky-wheel', 'Admin/LuckyWheelController@index');
-$router->post('/admin/lucky-wheel/update', 'Admin/LuckyWheelController@update');
+    // Admin - Invoices (Nạp tiền)
+    $router->get('/admin/invoices', 'Admin/InvoiceController@index');
 
-// Admin - Mystery Bag
-$router->get('/admin/mystery-bag', 'Admin/MysteryBagController@index');
-$router->get('/admin/mystery-bag/create', 'Admin/MysteryBagController@create');
-$router->post('/admin/mystery-bag/store', 'Admin/MysteryBagController@store');
-$router->get('/admin/mystery-bag/edit/{id}', 'Admin/MysteryBagController@edit');
-$router->post('/admin/mystery-bag/update/{id}', 'Admin/MysteryBagController@update');
-$router->get('/admin/mystery-bag/delete/{id}', 'Admin/MysteryBagController@delete');
+    // Admin - Lucky Wheel
+    $router->get('/admin/lucky-wheel', 'Admin/LuckyWheelController@index');
+    $router->post('/admin/lucky-wheel/update', 'Admin/LuckyWheelController@update');
 
-// Admin - Settings
-$router->get('/admin/settings', 'Admin/SettingsController@index');
-$router->post('/admin/settings/update', 'Admin/SettingsController@update');
+    // Admin - Mystery Bag
+    $router->get('/admin/mystery-bag', 'Admin/MysteryBagController@index');
+    $router->get('/admin/mystery-bag/create', 'Admin/MysteryBagController@create');
+    $router->post('/admin/mystery-bag/store', 'Admin/MysteryBagController@store');
+    $router->get('/admin/mystery-bag/edit/{id}', 'Admin/MysteryBagController@edit');
+    $router->post('/admin/mystery-bag/update/{id}', 'Admin/MysteryBagController@update');
+    $router->get('/admin/mystery-bag/delete/{id}', 'Admin/MysteryBagController@delete');
 
-// Dispatch
-$router->dispatch();
+    // Admin - Settings
+    $router->get('/admin/settings', 'Admin/SettingsController@index');
+    $router->post('/admin/settings/update', 'Admin/SettingsController@update');
+
+    // Dispatch
+    $router->dispatch();
 
 } catch (Throwable $e) {
     http_response_code(500);
