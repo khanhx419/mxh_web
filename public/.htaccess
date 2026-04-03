@@ -1,6 +1,6 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
+    RewriteBase /mxh_web/public/
 
     # Nếu file hoặc thư mục tồn tại thì phục vụ trực tiếp
     RewriteCond %{REQUEST_FILENAME} !-f

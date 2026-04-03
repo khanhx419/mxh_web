@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="dark">
+<html lang="vi" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,7 @@
     <script>
         // Apply saved theme immediately to prevent flash
         (function () {
-            const t = localStorage.getItem('theme') || 'dark';
+            const t = localStorage.getItem('theme') || 'light';
             document.documentElement.setAttribute('data-theme', t);
         })();
     </script>
@@ -153,11 +153,32 @@
         </div>
 
         <div class="topbar-actions">
-            <!-- Theme Toggle -->
-            <button class="theme-toggle" id="themeToggle" title="Chuyển đổi giao diện">
-                <i class="fas fa-sun"></i>
-                <i class="fas fa-moon"></i>
-            </button>
+            <!-- Theme Picker -->
+            <div class="theme-picker" id="themePicker">
+                <button class="theme-picker-btn" id="themePickerBtn" title="Đổi giao diện">
+                    <i class="fas fa-palette"></i>
+                </button>
+                <div class="theme-picker-dropdown" id="themePickerDropdown">
+                    <button class="theme-option" data-theme-value="light">
+                        <span class="theme-swatch swatch-light"></span> Sáng
+                    </button>
+                    <button class="theme-option" data-theme-value="dark">
+                        <span class="theme-swatch swatch-dark"></span> Tối
+                    </button>
+                    <button class="theme-option" data-theme-value="gray">
+                        <span class="theme-swatch swatch-gray"></span> Xám
+                    </button>
+                    <button class="theme-option" data-theme-value="blue">
+                        <span class="theme-swatch swatch-blue"></span> Xanh dương
+                    </button>
+                    <button class="theme-option" data-theme-value="green">
+                        <span class="theme-swatch swatch-green"></span> Xanh lá
+                    </button>
+                    <button class="theme-option" data-theme-value="pink">
+                        <span class="theme-swatch swatch-pink"></span> Hồng
+                    </button>
+                </div>
+            </div>
 
             <?php if (isLoggedIn()): ?>
                 <div class="user-balance-pill">
