@@ -203,12 +203,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ==========================================
-    // MYSTERY BAG MODULE
+    // MYSTERY BAG MODULE (Stock-based Account Shop)
     // ==========================================
     const mbConfig = document.getElementById('mb-config');
     if (mbConfig) {
         var csrfToken = mbConfig.dataset.csrf || '';
-        var checkinUrl = mbConfig.dataset.checkinUrl || '';
         var openUrl = mbConfig.dataset.openUrl || '';
 
         // Particles
@@ -243,121 +242,113 @@ document.addEventListener('DOMContentLoaded', function() {
             animateParticles();
         }
 
-        // Check-in
-        var btnCheckin = document.getElementById('btn-checkin');
-        if (btnCheckin) {
-            btnCheckin.addEventListener('click', function () {
-                btnCheckin.disabled = true; btnCheckin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
-                fetch(checkinUrl, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'csrf_token=' + csrfToken
-                }).then(function (r) { return r.json(); }).then(function (data) {
-                    if (data.csrf_token) csrfToken = data.csrf_token;
-                    if (data.status === 'success') {
-                        btnCheckin.innerHTML = '<i class="fas fa-check"></i> ' + data.message;
-                        btnCheckin.className = 'mb-btn-checkin mb-btn-done';
-                        var sd = document.getElementById('free-spins-display'); if (sd) sd.textContent = data.total_spins;
-                        var sc = document.getElementById('free-spins-count'); if (sc) sc.textContent = data.total_spins;
-                        var mf = document.getElementById('modal-free-spins'); if (mf) mf.textContent = data.free_spins;
-                        var days = document.querySelectorAll('.mb-day-item');
-                        if (days[data.day - 1]) {
-                            days[data.day - 1].className = 'mb-day-item mb-day-checked';
-                            days[data.day - 1].querySelector('.mb-day-icon').innerHTML = '<i class="fas fa-check-circle"></i>';
-                        }
-                        if (data.day < 7 && days[data.day]) { days[data.day].className = 'mb-day-item mb-day-locked'; }
-                    } else {
-                        btnCheckin.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ' + data.message;
-                        btnCheckin.disabled = false;
-                    }
-                }).catch(function () { btnCheckin.innerHTML = 'Lỗi, thử lại!'; btnCheckin.disabled = false; });
-            });
-        }
-
         // Purchase Modal
         var currentBagId = null, currentBagPrice = 0;
-        window.showPurchaseModal = function (id, name, price) {
+        window.showPurchaseModal = function (id, name, price, stock) {
             currentBagId = id; currentBagPrice = price;
             document.getElementById('modal-bag-name').textContent = name;
             document.getElementById('modal-price').textContent = new Intl.NumberFormat('vi-VN').format(price) + 'đ';
-            var freeEl = document.getElementById('modal-free-spins');
-            var freeCount = freeEl ? (parseInt(freeEl.textContent) || 0) : 0;
-            var useFreeEl = document.getElementById('modal-use-free');
-            if (useFreeEl) useFreeEl.checked = freeCount > 0;
-            updatePaymentInfo();
+            document.getElementById('modal-total').textContent = new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+            document.getElementById('modal-stock').textContent = stock + ' tài khoản';
             document.getElementById('purchaseModal').classList.add('active');
         };
         window.closePurchaseModal = function () { document.getElementById('purchaseModal').classList.remove('active'); };
-        window.updatePaymentInfo = function () {
-            var useFreeEl = document.getElementById('modal-use-free');
-            var useFree = useFreeEl ? useFreeEl.checked : false;
-            document.getElementById('modal-total').textContent = useFree ? 'Miễn phí (1 lượt)' : new Intl.NumberFormat('vi-VN').format(currentBagPrice) + 'đ';
-            document.getElementById('modal-total').className = useFree ? 'mb-text-success' : 'mb-text-warning';
-        };
 
         var confirmBtn = document.getElementById('btn-confirm-purchase');
         if (confirmBtn) {
             confirmBtn.addEventListener('click', function () {
-                var useFreeEl = document.getElementById('modal-use-free');
-                var useFree = useFreeEl ? useFreeEl.checked : false;
-                closePurchaseModal(); openBag(currentBagId, useFree);
+                closePurchaseModal();
+                buyBag(currentBagId);
             });
         }
 
-        function openBag(bagId, useFree) {
+        function buyBag(bagId) {
             var loading = document.getElementById('loading-animation'),
                 resultBox = document.getElementById('result-content'),
                 errorBox = document.getElementById('error-content');
             loading.style.display = 'block'; resultBox.style.display = 'none'; errorBox.style.display = 'none';
             document.getElementById('resultModal').classList.add('active');
+
             setTimeout(function () {
-                var body = 'csrf_token=' + csrfToken;
-                if (useFree) body += '&use_free_spin=1';
                 fetch(openUrl + bagId, {
                     method: 'POST',
                     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: body
+                    body: 'csrf_token=' + csrfToken
                 }).then(function (r) { return r.json(); }).then(function (data) {
                     if (data.csrf_token) csrfToken = data.csrf_token;
                     loading.style.display = 'none';
+
                     if (data.status === 'error') {
                         document.getElementById('error-desc').innerText = data.message;
                         errorBox.style.display = 'block';
                     } else {
-                        var icon = document.querySelector('.mb-result-success-icon i');
-                        var title = document.getElementById('result-title');
-                        if (data.is_lucky) {
-                            title.textContent = '🎉 Chúc mừng!'; title.style.color = 'var(--accent-success)';
-                            if (icon) { icon.className = 'fas fa-coins'; icon.style.cssText = 'font-size:2rem;color:#10b981'; }
-                        } else {
-                            title.textContent = '😢 Tiếc quá!'; title.style.color = 'var(--accent-warning)';
-                            if (icon) { icon.className = 'fas fa-sad-tear'; icon.style.cssText = 'font-size:2rem;color:#f59e0b'; }
-                        }
-                        document.getElementById('result-desc').innerText = data.item_name;
-                        document.getElementById('result-detail').innerText = data.item_content;
-                        document.querySelectorAll('.user-balance').forEach(function (el) { el.innerHTML = '<i class="fas fa-wallet"></i> ' + data.balance; });
-                        if (data.free_spins !== undefined) {
-                            var sd = document.getElementById('free-spins-display'); if (sd) sd.textContent = data.free_spins;
-                            var sc = document.getElementById('free-spins-count'); if (sc) sc.textContent = data.free_spins;
-                            var mf = document.getElementById('modal-free-spins'); if (mf) mf.textContent = data.free_spins;
-                        }
+                        // Success — show account info
+                        document.getElementById('result-desc').innerText = data.message;
+
+                        var acc = data.account || {};
+                        
+                        // Username
+                        var usernameEl = document.getElementById('acc-username');
+                        var usernameRow = document.getElementById('acc-username-row');
+                        if (acc.username) { usernameEl.textContent = acc.username; usernameRow.style.display = 'flex'; }
+                        else { usernameRow.style.display = 'none'; }
+
+                        // Password
+                        var passwordEl = document.getElementById('acc-password');
+                        var passwordRow = document.getElementById('acc-password-row');
+                        if (acc.password) { passwordEl.textContent = acc.password; passwordRow.style.display = 'flex'; }
+                        else { passwordRow.style.display = 'none'; }
+
+                        // Email
+                        var emailEl = document.getElementById('acc-email');
+                        var emailRow = document.getElementById('acc-email-row');
+                        if (acc.email) { emailEl.textContent = acc.email; emailRow.style.display = 'flex'; }
+                        else { emailRow.style.display = 'none'; }
+
+                        // Extra
+                        var extraEl = document.getElementById('acc-extra');
+                        var extraRow = document.getElementById('acc-extra-row');
+                        if (acc.extra && acc.extra.trim()) { extraEl.textContent = acc.extra; extraRow.style.display = 'flex'; }
+                        else { extraRow.style.display = 'none'; }
+
+                        // Update balance
+                        document.querySelectorAll('.user-balance').forEach(function (el) { el.textContent = data.balance; });
+
                         resultBox.style.display = 'block';
                     }
                 }).catch(function () {
                     loading.style.display = 'none';
-                    document.getElementById('error-desc').innerText = 'Lỗi mạng, thử lại!';
+                    document.getElementById('error-desc').innerText = 'Lỗi kết nối mạng. Vui lòng thử lại!';
                     errorBox.style.display = 'block';
                 });
-            }, 1200);
+            }, 800);
         }
 
+        // Copy helper
+        window.copyText = function (elementId) {
+            var text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(function () {
+                var btn = document.getElementById(elementId).closest('.mb-account-row').querySelector('.mb-copy-btn');
+                if (btn) {
+                    var orig = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i>';
+                    btn.style.background = 'var(--accent-success)';
+                    btn.style.color = '#fff';
+                    setTimeout(function () {
+                        btn.innerHTML = orig;
+                        btn.style.background = '';
+                        btn.style.color = '';
+                    }, 1500);
+                }
+            });
+        };
+
         window.closeResultModal = function () { document.getElementById('resultModal').classList.remove('active'); };
-        window.toggleItems = function (id) { var p = document.getElementById('items-panel-' + id); if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
         document.querySelectorAll('.mb-modal-overlay').forEach(function (o) {
             o.addEventListener('click', function (e) { if (e.target === this) this.classList.remove('active'); });
         });
         document.querySelectorAll('.mb-bag-card').forEach(function (c) {
-            c.addEventListener('click', function () { var b = this.querySelector('.mb-btn-open'); if (b) b.click(); });
+            c.addEventListener('click', function () { var b = this.querySelector('.mb-btn-open:not([disabled])'); if (b) b.click(); });
         });
     }
 });

@@ -103,6 +103,7 @@
                 <?php if (empty($transactions)): ?>
                     <p class="text-muted">Chưa có giao dịch nào.</p>
                 <?php else: ?>
+                    <div class="table-wrapper" style="overflow-x:auto;">
                     <table class="table">
                         <thead>
                             <tr>
@@ -142,6 +143,7 @@
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

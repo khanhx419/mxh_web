@@ -61,7 +61,7 @@
         <div class="form-group">
             <label>Thông tin bổ sung (tuỳ chọn)</label>
             <textarea name="acct_extra" id="acct_extra" class="form-control" rows="3" placeholder="VD: Server: Việt Nam&#10;Rank: Kim Cương&#10;Skin: 50+ skins"><?= e($acct_extra) ?></textarea>
-            <small class="form-hint"><i class="fas fa-info-circle"></i> Thông tin thêm sẽ hiện cho user khi trúng item này.</small>
+            <small class="form-hint"><i class="fas fa-info-circle"></i> Thông tin thêm sẽ hiện cho user khi nhận tài khoản này.</small>
         </div>
 
         <!-- Hidden content field built from JS -->
@@ -69,26 +69,19 @@
     </div>
 
     <div class="form-card" style="margin-bottom:24px">
-        <h3 style="margin-bottom:16px;font-size:.95rem"><i class="fas fa-sliders-h" style="color:var(--accent-warning)"></i> Cấu hình xác suất</h3>
+        <h3 style="margin-bottom:16px;font-size:.95rem"><i class="fas fa-cog" style="color:var(--accent-warning)"></i> Cấu hình</h3>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-            <div class="form-group">
-                <label>Giá trị (VNĐ)</label>
-                <input type="number" name="value" class="form-control" value="<?= e($item['value'] ?? '0') ?>" step="any">
-                <small class="form-hint"><i class="fas fa-info-circle"></i> Giá trị ước tính. Nếu > 0, user sẽ nhận được số tiền này khi trúng.</small>
-            </div>
-            <div class="form-group">
-                <label>Xác suất (trọng số)</label>
-                <input type="number" name="probability" class="form-control" value="<?= e($item['probability'] ?? '10') ?>" min="0">
-                <small class="form-hint"><i class="fas fa-lightbulb"></i> VD: A=60, B=30, C=10 → 60%, 30%, 10%</small>
-            </div>
+        <div class="form-group">
+            <label>Giá trị (VNĐ)</label>
+            <input type="number" name="value" class="form-control" value="<?= e($item['value'] ?? '0') ?>" step="any">
+            <small class="form-hint"><i class="fas fa-info-circle"></i> Nếu > 0, user sẽ nhận thêm số tiền này vào tài khoản khi trúng (thưởng thêm).</small>
         </div>
 
         <div class="form-group">
             <label>
-                <input type="checkbox" name="status" <?= ($item['status'] ?? 1) ? 'checked' : '' ?>> Kích hoạt (Cho phép rơi item này)
+                <input type="checkbox" name="status" <?= ($item['status'] ?? 1) ? 'checked' : '' ?>> Còn hàng (cho phép random ra acc này)
             </label>
-            <small class="form-hint"><i class="fas fa-info-circle"></i> Tắt để tạm ẩn item khỏi pool xác suất.</small>
+            <small class="form-hint"><i class="fas fa-info-circle"></i> Tắt nếu tài khoản đã được phát hoặc muốn tạm ẩn.</small>
         </div>
 
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?= $item ? 'Cập nhật' : 'Thêm mới' ?></button>

@@ -20,37 +20,25 @@ class MysteryBag extends Model
     public function getItems($bagId)
     {
         $db = $this->getDb();
-        $stmt = $db->prepare("SELECT * FROM mystery_bag_items WHERE bag_id = ? ORDER BY probability DESC");
+        $stmt = $db->prepare("SELECT * FROM mystery_bag_items WHERE bag_id = ? ORDER BY id DESC");
         $stmt->execute([$bagId]);
         return $stmt->fetchAll();
     }
 
     /**
-     * Lấy items kèm phần trăm đã tính
-     */
-    public function getItemsWithPercentages($bagId)
-    {
-        $items = $this->getItems($bagId);
-        $total = array_sum(array_column($items, 'probability'));
-        foreach ($items as &$item) {
-            $item['percentage'] = $total > 0 ? round($item['probability'] / $total * 100, 1) : 0;
-        }
-        return $items;
-    }
-
-    /**
-     * Lấy items đang active (status=1)
+     * Lấy items đang active (status=1) — chưa được phát
      */
     public function getAvailableItems($bagId)
     {
         $db = $this->getDb();
-        $stmt = $db->prepare("SELECT * FROM mystery_bag_items WHERE bag_id = ? AND (status = 1 OR status IS NULL) ORDER BY probability DESC");
+        $stmt = $db->prepare("SELECT * FROM mystery_bag_items WHERE bag_id = ? AND (status = 1 OR status IS NULL) ORDER BY id DESC");
         $stmt->execute([$bagId]);
         return $stmt->fetchAll();
     }
 
     /**
-     * Thuật toán mở túi mù (chỉ dùng items đang active)
+     * Mở túi mù — Random thuần (không dùng xác suất)
+     * Chọn ngẫu nhiên 1 tài khoản từ danh sách available, rồi tắt nó (đã phát)
      */
     public function open($bagId)
     {
@@ -58,41 +46,16 @@ class MysteryBag extends Model
         if (empty($items))
             return null;
 
-        $totalProbability = array_sum(array_column($items, 'probability'));
-        $randomPoint = mt_rand(1, intval($totalProbability));
+        // Random thuần — chọn bất kỳ 1 item
+        $index = array_rand($items);
+        $wonItem = $items[$index];
 
-        $currentWeight = 0;
-        foreach ($items as $item) {
-            $currentWeight += $item['probability'];
-            if ($randomPoint <= $currentWeight) {
-                return $item;
-            }
-        }
-
-        return $items[0]; // Fallback
-    }
-
-    /**
-     * Update probability cho 1 item
-     */
-    public function updateItemProbability($itemId, $probability)
-    {
+        // Tắt item đã phát (để không phát lại)
         $db = $this->getDb();
-        $stmt = $db->prepare("UPDATE mystery_bag_items SET probability = ? WHERE id = ?");
-        return $stmt->execute([intval($probability), $itemId]);
-    }
+        $stmt = $db->prepare("UPDATE mystery_bag_items SET status = 0 WHERE id = ?");
+        $stmt->execute([$wonItem['id']]);
 
-    /**
-     * Bulk update probabilities cho tất cả items của 1 túi
-     */
-    public function bulkUpdateProbabilities($bagId, $probabilities)
-    {
-        $db = $this->getDb();
-        $stmt = $db->prepare("UPDATE mystery_bag_items SET probability = ? WHERE id = ? AND bag_id = ?");
-        foreach ($probabilities as $itemId => $prob) {
-            $stmt->execute([intval($prob), $itemId, $bagId]);
-        }
-        return true;
+        return $wonItem;
     }
 
     /**

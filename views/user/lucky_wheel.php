@@ -10,7 +10,7 @@
         </p>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 380px; gap: 28px; align-items: start;">
+    <div class="wheel-page-grid">
         <!-- Wheel Area -->
         <div style="text-align: center;">
             <div class="wheel-wrapper">
@@ -67,6 +67,13 @@
         </div>
 
         <style>
+            .wheel-page-grid {
+                display: grid;
+                grid-template-columns: 1fr 380px;
+                gap: 28px;
+                align-items: start;
+            }
+
             .wheel-wrapper {
                 position: relative;
                 display: inline-block;
@@ -187,9 +194,10 @@
                 }
             }
 
+            /* Tablet */
             @media (max-width: 900px) {
-                div[style*="grid-template-columns: 1fr 380px"] {
-                    display: block !important;
+                .wheel-page-grid {
+                    grid-template-columns: 1fr;
                 }
 
                 .wheel-outer-ring {
@@ -205,6 +213,59 @@
                 .wheel-glow {
                     width: 360px;
                     height: 360px;
+                }
+            }
+
+            /* Small phone */
+            @media (max-width: 400px) {
+                .wheel-outer-ring {
+                    width: 280px;
+                    height: 280px;
+                }
+
+                #wheelCanvas {
+                    width: 260px;
+                    height: 260px;
+                }
+
+                .wheel-glow {
+                    width: 310px;
+                    height: 310px;
+                }
+
+                .wheel-center-circle {
+                    width: 48px;
+                    height: 48px;
+                    font-size: 1rem;
+                }
+
+                #spin-btn {
+                    padding: 12px 32px !important;
+                    font-size: 0.95rem !important;
+                }
+            }
+
+            /* Extra small phone (320px) */
+            @media (max-width: 340px) {
+                .wheel-outer-ring {
+                    width: 250px;
+                    height: 250px;
+                }
+
+                #wheelCanvas {
+                    width: 230px;
+                    height: 230px;
+                }
+
+                .wheel-glow {
+                    width: 280px;
+                    height: 280px;
+                }
+
+                .wheel-center-circle {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 0.85rem;
                 }
             }
         </style>

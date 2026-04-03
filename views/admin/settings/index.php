@@ -287,4 +287,10 @@ document.addEventListener('DOMContentLoaded', function() {
 .form-hint{display:block;margin-top:4px;font-size:.78rem;color:var(--text-muted)}
 .form-hint i{margin-right:4px;color:var(--accent-warning)}
 .form-hint code{background:rgba(99,102,241,.15);padding:1px 5px;border-radius:3px;font-size:.9em}
+@media(max-width:480px){
+    .form-card{padding:16px;border-radius:12px}
+    .form-card h3{font-size:1rem}
+    .form-section-note{font-size:.78rem;padding:8px 10px}
+    #cropper-modal > div{width:95%!important;padding:16px!important}
+}
 </style>

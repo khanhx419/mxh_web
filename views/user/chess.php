@@ -37,6 +37,23 @@
         border-radius: 8px; overflow: hidden;
         box-shadow: 0 8px 30px rgba(0,0,0,0.25);
         border: 2px solid var(--border-color);
+        /* Critical for mobile touch: prevent page scroll while moving pieces */
+        touch-action: none;
+    }
+    /* Prevent scrolling when touching the board on mobile */
+    #board {
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    #board .square-55d63 {
+        touch-action: none;
+    }
+    /* Make pieces easier to grab on mobile */
+    #board img {
+        touch-action: none;
+        -webkit-user-drag: auto;
+        pointer-events: auto;
     }
     .side-panel {
         background: var(--bg-card); border-radius: 14px;
@@ -57,7 +74,7 @@
     .ctrl-btn { width: 100%; margin-bottom: 10px; padding: 11px; font-weight: 600; border-radius: 8px; }
     .move-log {
         max-height: 220px; overflow-y: auto;
-        background: var(--bg-body); padding: 10px;
+        background: var(--bg-body, var(--bg-primary)); padding: 10px;
         border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9rem;
     }
     .move-log table { width: 100%; }
@@ -155,9 +172,28 @@
     .chess-lb-row .wins-info { font-size: 0.78rem; color: var(--accent-info); font-weight: 700; }
     .chess-lb-row .pts-info { font-size: 0.78rem; color: var(--accent-warning); font-weight: 700; margin-left: 8px; }
 
+    /* === RESPONSIVE: Tablet === */
     @media (max-width: 860px) {
         .chess-layout { grid-template-columns: 1fr; }
         .chess-user-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* === RESPONSIVE: Mobile === */
+    @media (max-width: 480px) {
+        .chess-header h1 { font-size: 1.2rem; }
+        .chess-header p { font-size: 0.82rem; }
+        .chess-score-banner { padding: 10px 16px; }
+        .chess-score-banner .score-value { font-size: 1.2rem; }
+        .chess-user-stats { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .chess-stat-card { padding: 8px; }
+        .chess-stat-card .stat-wins { font-size: 1rem; }
+        .board-wrap { border-width: 1px; }
+        .side-panel { padding: 14px; }
+        .game-status { padding: 10px; font-size: 0.88rem; }
+        .ctrl-btn { padding: 12px; font-size: 0.88rem; }
+        .move-log { max-height: 160px; font-size: 0.82rem; }
+        .chess-lb-row { padding: 6px 8px; gap: 6px; }
+        .chess-lb-row .name { font-size: 0.82rem; }
     }
 </style>
 
@@ -198,6 +234,16 @@
         <h4 style="margin-top: 16px;">Đang tải Stockfish AI Engine...</h4>
         <p style="color: var(--text-secondary); font-size: 0.85rem;">Lần đầu có thể mất vài giây</p>
     </div>
+
+    <!-- Fullscreen toggle (mobile only) -->
+    <button class="chess-fullscreen-btn" id="chess-fs-toggle">
+        <i class="fas fa-expand"></i> Chế độ toàn màn hình
+    </button>
+
+    <!-- Exit fullscreen button (shown only in fullscreen) -->
+    <button class="chess-exit-fs-btn" id="chess-fs-exit">
+        <i class="fas fa-compress"></i> Thoát
+    </button>
 
     <!-- Game area -->
     <div class="chess-layout" id="game-area" style="display:none;">
@@ -328,6 +374,19 @@ document.addEventListener('DOMContentLoaded', function () {
             pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
         });
         $(window).resize(() => board && board.resize());
+
+        // Mobile: prevent page scrolling when touching the board
+        var boardEl = document.getElementById('board');
+        if (boardEl) {
+            boardEl.addEventListener('touchstart', function(e) {
+                if (gameActive && !aiThinking) {
+                    // Allow default only if tapping outside a piece area would be needed
+                }
+            }, { passive: true });
+            boardEl.addEventListener('touchmove', function(e) {
+                e.preventDefault(); // Prevent page scroll while dragging pieces
+            }, { passive: false });
+        }
 
         // Two-click move handler
         $('#board').on('click', '.square-55d63', function () {
@@ -517,6 +576,71 @@ document.addEventListener('DOMContentLoaded', function () {
             const panel = document.getElementById(this.dataset.chessTab);
             if (panel) panel.classList.add('active');
         });
+    });
+
+    // ==========================================
+    // CHESS FULLSCREEN MODE
+    // ==========================================
+    const fsToggle = document.getElementById('chess-fs-toggle');
+    const fsExit = document.getElementById('chess-fs-exit');
+    const chessPage = document.querySelector('.chess-page');
+
+    function enterChessFullscreen() {
+        document.body.classList.add('chess-fullscreen-active');
+
+        // Try native Fullscreen API
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+            el.requestFullscreen().catch(() => {});
+        } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+        } else if (el.msRequestFullscreen) {
+            el.msRequestFullscreen();
+        }
+
+        // Resize board after transition
+        setTimeout(function() {
+            if (board) board.resize();
+        }, 350);
+    }
+
+    function exitChessFullscreen() {
+        document.body.classList.remove('chess-fullscreen-active');
+
+        // Exit native fullscreen if active
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+
+        setTimeout(function() {
+            if (board) board.resize();
+        }, 350);
+    }
+
+    if (fsToggle) {
+        fsToggle.addEventListener('click', enterChessFullscreen);
+    }
+
+    if (fsExit) {
+        fsExit.addEventListener('click', exitChessFullscreen);
+    }
+
+    // Sync state when user presses ESC to exit native fullscreen
+    document.addEventListener('fullscreenchange', function() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            document.body.classList.remove('chess-fullscreen-active');
+            setTimeout(function() { if (board) board.resize(); }, 100);
+        }
+    });
+    document.addEventListener('webkitfullscreenchange', function() {
+        if (!document.webkitFullscreenElement) {
+            document.body.classList.remove('chess-fullscreen-active');
+            setTimeout(function() { if (board) board.resize(); }, 100);
+        }
     });
 });
 </script>

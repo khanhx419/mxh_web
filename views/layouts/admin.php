@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -11,6 +11,12 @@
     </title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="<?= asset('css/style.css') ?>">
+    <script>
+        (function() {
+            const t = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 
 <body>
@@ -18,21 +24,26 @@
     <!-- Navbar -->
     <nav class="navbar">
         <div class="navbar-inner">
-            <a href="<?= url('/admin') ?>" class="navbar-brand">
-                <?php $siteLogo = app_setting('site_logo'); if ($siteLogo): ?>
-                    <img src="<?= asset($siteLogo) ?>" alt="Logo" style="max-height: 35px; border-radius: 4px;">
-                    <span style="font-size: 0.7em; opacity: 0.7;">ADMIN</span>
-                <?php else: ?>
-                    <i class="fas fa-bolt"></i>
-                    <?= e(APP_NAME) ?> <span style="font-size: 0.7em; opacity: 0.7;">ADMIN</span>
-                <?php endif; ?>
-            </a>
+            <div style="display:flex;align-items:center;gap:12px">
+                <button class="admin-sidebar-toggle" id="adminSidebarToggle" aria-label="Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a href="<?= url('/admin') ?>" class="navbar-brand">
+                    <?php $siteLogo = app_setting('site_logo'); if ($siteLogo): ?>
+                        <img src="<?= asset($siteLogo) ?>" alt="Logo" style="max-height: 35px; border-radius: 4px;">
+                        <span style="font-size: 0.7em; opacity: 0.7;">ADMIN</span>
+                    <?php else: ?>
+                        <i class="fas fa-bolt"></i>
+                        <?= e(APP_NAME) ?> <span style="font-size: 0.7em; opacity: 0.7;">ADMIN</span>
+                    <?php endif; ?>
+                </a>
+            </div>
 
             <div class="navbar-actions">
-                <a href="<?= url('/') ?>" class="btn btn-sm btn-secondary">
-                    <i class="fas fa-globe"></i> Xem Website
+                <a href="<?= url('/') ?>" class="btn btn-sm btn-secondary hide-mobile">
+                    <i class="fas fa-globe"></i> <span class="hide-mobile">Xem Website</span>
                 </a>
-                <div class="user-info">
+                <div class="user-info hide-mobile">
                     <i class="fas fa-user-shield"></i>
                     <?= e($_SESSION['username']) ?>
                 </div>
@@ -42,6 +53,9 @@
             </div>
         </div>
     </nav>
+
+    <!-- Admin Sidebar Overlay (mobile) -->
+    <div class="admin-sidebar-overlay" id="adminSidebarOverlay"></div>
 
     <div class="admin-wrapper">
         <!-- Sidebar -->
@@ -146,6 +160,27 @@
     </div>
 
     <script src="<?= asset('js/app.js') ?>"></script>
+    <script>
+    (function() {
+        var toggle = document.getElementById('adminSidebarToggle');
+        var sidebar = document.querySelector('.admin-sidebar');
+        var overlay = document.getElementById('adminSidebarOverlay');
+        if (toggle && sidebar) {
+            toggle.addEventListener('click', function() {
+                sidebar.classList.toggle('open');
+                if (overlay) overlay.classList.toggle('active');
+                document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+            });
+        }
+        if (overlay) {
+            overlay.addEventListener('click', function() {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
+    })();
+    </script>
 </body>
 
 </html>

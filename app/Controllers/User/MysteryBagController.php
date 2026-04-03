@@ -6,7 +6,7 @@ require_once BASE_PATH . '/app/Middleware/AuthMiddleware.php';
 class MysteryBagController extends Controller
 {
     /**
-     * Trang túi mù
+     * Trang túi mù — Hiển thị danh sách túi mù + stock
      */
     public function index()
     {
@@ -14,10 +14,12 @@ class MysteryBagController extends Controller
         $bags = $bagModel->getActiveBags();
 
         foreach ($bags as &$bag) {
-            $bag['items'] = $bagModel->getItems($bag['id']);
+            // Đếm stock còn lại cho mỗi túi
+            $available = $bagModel->getAvailableItems($bag['id']);
+            $bag['stock'] = count($available);
         }
 
-        // Lấy lịch sử mở gần nhất
+        // Lấy lịch sử mua gần nhất (public feed)
         $db = $bagModel->getDb();
         $stmt = $db->query("
             SELECT h.*, u.username, b.name as bag_name 
@@ -30,24 +32,25 @@ class MysteryBagController extends Controller
         $history = $stmt->fetchAll();
 
         $this->view('user.mystery_bag', [
-            'pageTitle' => 'Mở Túi Mù May Mắn',
+            'pageTitle' => 'Túi Mù - Mua Tài Khoản Ngẫu Nhiên',
             'bags' => $bags,
             'history' => $history
         ]);
     }
 
     /**
-     * Xử lý mở túi (100% WIN — luôn nhận tài khoản ngẫu nhiên)
+     * Xử lý mua túi mù
+     * Logic: Trừ tiền → Random 1 acc từ stock → Đánh dấu "Sold" → Trả về info acc cho user
      */
     public function open($bagId)
     {
         if (!verifyCsrf()) {
-            $this->json(['status' => 'error', 'message' => 'Phiên làm việc hết hạn']);
+            $this->json(['status' => 'error', 'message' => 'Phiên làm việc hết hạn. Vui lòng tải lại trang.']);
             return;
         }
 
         if (!isLoggedIn()) {
-            $this->json(['status' => 'error', 'message' => 'Vui lòng đăng nhập để mở túi mù']);
+            $this->json(['status' => 'error', 'message' => 'Vui lòng đăng nhập để mua túi mù']);
             return;
         }
 
@@ -56,6 +59,7 @@ class MysteryBagController extends Controller
         $bagModel = $this->model('MysteryBag');
         $transModel = $this->model('Transaction');
 
+        // 1. Kiểm tra túi tồn tại & đang hoạt động
         $bag = $bagModel->findById($bagId);
         if (!$bag || $bag['status'] != 1) {
             $this->json(['status' => 'error', 'message' => 'Túi mù không tồn tại hoặc đã bị khóa']);
@@ -64,53 +68,83 @@ class MysteryBagController extends Controller
 
         $price = intval($bag['price']);
 
-        // Chỉ chấp nhận thanh toán bằng số dư
+        // 2. Kiểm tra số dư
         $userBalance = intval($userModel->getBalance($userId));
         if ($userBalance < $price) {
-            $this->json(['status' => 'error', 'message' => 'Bạn không đủ tiền để mở túi này. Vui lòng nạp thêm!']);
+            $this->json(['status' => 'error', 'message' => 'Số dư không đủ. Vui lòng nạp thêm tiền!']);
             return;
         }
 
-        // Kiểm tra còn tài khoản không
-        $items = $bagModel->getAvailableItems($bagId);
-        if (empty($items)) {
-            $this->json(['status' => 'error', 'message' => 'Túi mù đã hết tài khoản. Vui lòng chờ admin bổ sung!']);
+        // 3. Kiểm tra còn tài khoản trong kho không
+        $availableItems = $bagModel->getAvailableItems($bagId);
+        if (empty($availableItems)) {
+            $this->json(['status' => 'error', 'message' => 'Túi mù đã hết hàng! Vui lòng chờ admin bổ sung thêm.']);
             return;
         }
 
-        // Trừ tiền mua túi
+        // 4. Trừ tiền
         $userModel->updateBalance($userId, -$price);
         $newBalance = $userModel->getBalance($userId);
         $transModel->log($userId, 'purchase', $price, $newBalance, 'Mua túi mù: ' . $bag['name']);
 
-        // === 100% WIN: Luôn nhận tài khoản ngẫu nhiên ===
-        $wonItem = $bagModel->open($bagId);
+        // 5. Random 1 tài khoản & đánh dấu đã bán (status=0)
+        $soldItem = $bagModel->open($bagId);
 
-        $itemName = $wonItem['name'];
-        $itemContent = $wonItem['content'];
-        $itemValue = intval($wonItem['value']);
+        // 6. Ghi lịch sử mua
+        $bagModel->logHistory($userId, $bagId, $soldItem);
 
-        if ($itemValue > 0) {
-            $userModel->updateBalance($userId, $itemValue);
-            $finalBalance = $userModel->getBalance($userId);
-            $transModel->log($userId, 'refund', $itemValue, $finalBalance, 'Phần thưởng túi mù: ' . $itemName);
-        }
+        // 7. Cập nhật session
+        $_SESSION['user_balance'] = $newBalance;
 
-        $bagModel->logHistory($userId, $bagId, $wonItem);
+        // 8. Parse account info để hiển thị đẹp cho user
+        $content = $soldItem['content'] ?? '';
+        $accountInfo = $this->parseAccountContent($content);
 
-        // Cập nhật session balance
-        $_SESSION['user_balance'] = $userModel->getBalance($userId);
-
+        // 9. Trả kết quả
         $this->json([
             'status' => 'success',
-            'item_name' => $itemName,
-            'item_content' => $itemContent,
-            'item_value' => $itemValue,
-            'is_lucky' => true,
-            'message' => 'Chúc mừng! Bạn đã nhận được: ' . $itemName,
-            'balance' => formatMoney($_SESSION['user_balance']),
+            'message' => 'Mua thành công! Đây là tài khoản của bạn:',
+            'item_name' => $soldItem['name'],
+            'account' => $accountInfo,
+            'raw_content' => $content,
+            'balance' => formatMoney($newBalance),
+            'stock_left' => count($availableItems) - 1,
             'csrf_token' => $_SESSION['csrf_token']
         ]);
+    }
+
+    /**
+     * Parse nội dung tài khoản thành các trường riêng
+     */
+    private function parseAccountContent($content)
+    {
+        $result = [
+            'username' => '',
+            'password' => '',
+            'email' => '',
+            'extra' => ''
+        ];
+
+        $lines = explode("\n", $content);
+        $extraLines = [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            if (stripos($line, 'Tài khoản:') === 0) {
+                $result['username'] = trim(substr($line, strlen('Tài khoản:')));
+            } elseif (stripos($line, 'Mật khẩu:') === 0) {
+                $result['password'] = trim(substr($line, strlen('Mật khẩu:')));
+            } elseif (stripos($line, 'Email:') === 0) {
+                $result['email'] = trim(substr($line, strlen('Email:')));
+            } else {
+                $extraLines[] = $line;
+            }
+        }
+
+        $result['extra'] = implode("\n", $extraLines);
+        return $result;
     }
 
     /**
@@ -133,8 +167,6 @@ class MysteryBagController extends Controller
         $userId = $_SESSION['user_id'];
         $checkinModel = $this->model('DailyCheckin');
         $result = $checkinModel->checkin($userId);
-
-        // Thêm csrf_token mới vào response
         $result['csrf_token'] = $_SESSION['csrf_token'] ?? '';
 
         echo json_encode($result);
