@@ -146,6 +146,9 @@ try {
     $router->get('/admin/mystery-bag/items/edit/{id}', 'Admin/MysteryBagController@editItem');
     $router->post('/admin/mystery-bag/items/update/{id}', 'Admin/MysteryBagController@updateItem');
     $router->get('/admin/mystery-bag/items/delete/{id}', 'Admin/MysteryBagController@deleteItem');
+    $router->post('/admin/mystery-bag/{id}/probabilities', 'Admin/MysteryBagController@updateProbabilities');
+    $router->post('/admin/mystery-bag/{id}/items/bulk-add', 'Admin/MysteryBagController@bulkAddItems');
+    $router->post('/admin/mystery-bag/{id}/items/bulk-import', 'Admin/MysteryBagController@bulkImportAccounts');
 
     // Admin - Events
     $router->get('/admin/events', 'Admin/EventController@index');

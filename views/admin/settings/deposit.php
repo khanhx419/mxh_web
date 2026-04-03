@@ -10,6 +10,28 @@
 <form action="<?= url('/admin/settings/deposit/update') ?>" method="POST">
     <?= csrfField() ?>
 
+    <!-- Cấu hình API chung -->
+    <div class="form-card" style="margin-bottom:24px">
+        <h3 style="margin-bottom:4px"><i class="fas fa-plug"></i> Cấu Hình API Chung</h3>
+        <p class="form-section-note"><i class="fas fa-info-circle"></i> URL và Token API dùng cho hệ thống tự động kiểm tra giao dịch ngân hàng (cron deposit). Đây là cấu hình master, nếu để trống sẽ fallback về giá trị trong file <code>.env</code>.</p>
+
+        <div class="form-group">
+            <label>Bank API URL</label>
+            <input type="text" name="bank_api_url" class="form-control" value="<?= e($settings['bank_api_url'] ?? '') ?>" placeholder="https://thueapibank.vn">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> URL gốc của nhà cung cấp API ngân hàng (VD: thueapibank.vn hoặc web2m.com)</small>
+        </div>
+        <div class="form-group">
+            <label>Bank API Token</label>
+            <div style="position:relative">
+                <input type="password" name="bank_api_token" id="bank_api_token_input" class="form-control" value="<?= e($settings['bank_api_token'] ?? '') ?>" placeholder="Token API xác thực" style="padding-right:40px">
+                <button type="button" onclick="toggleTokenVisibility(this, 'bank_api_token_input')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.9rem;padding:4px" title="Hiện/ẩn token">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Token xác thực từ nhà cung cấp API. Giữ bí mật, không chia sẻ.</small>
+        </div>
+    </div>
+
     <!-- Chiết khấu nạp tiền -->
     <div class="form-card" style="margin-bottom:24px">
         <h3 style="margin-bottom:4px"><i class="fas fa-percent"></i> Chiết Khấu Nạp Tiền</h3>
@@ -149,4 +171,21 @@
 .form-card h3 i{color:var(--accent-primary);margin-right:8px}
 .form-section-note{font-size:.82rem;color:var(--text-secondary);margin-bottom:20px;padding:10px 14px;background:rgba(99,102,241,.06);border-left:3px solid var(--accent-primary);border-radius:0 8px 8px 0}
 .form-section-note i{color:var(--accent-primary);margin-right:4px}
+.form-section-note code{background:rgba(99,102,241,.15);padding:2px 6px;border-radius:4px;font-size:.85em}
+.form-hint{display:block;margin-top:4px;font-size:.78rem;color:var(--text-muted)}
+.form-hint i{margin-right:4px;color:var(--accent-warning)}
 </style>
+
+<script>
+function toggleTokenVisibility(btn, inputId) {
+    var input = document.getElementById(inputId);
+    var icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+</script>

@@ -257,4 +257,95 @@ class MysteryBagController extends Controller
         setFlash('success', "Đã thêm {$count} tài khoản");
         redirect('/admin/mystery-bag/' . $bagId . '/items');
     }
+
+    // ===== BULK IMPORT ACCOUNTS (username|password|email) =====
+
+    public function bulkImportAccounts($bagId)
+    {
+        if (!verifyCsrf()) { setFlash('danger', 'Phiên hết hạn'); redirect('/admin/mystery-bag/' . $bagId . '/items'); }
+
+        $bagModel = $this->model('MysteryBag');
+        $bag = $bagModel->findById($bagId);
+        if (!$bag) { setFlash('danger', 'Không tìm thấy túi'); redirect('/admin/mystery-bag'); }
+
+        $rawText = trim($_POST['bulk_accounts'] ?? '');
+        $lines = [];
+
+        // Source 1: JSON/TXT file upload
+        if (!empty($_FILES['bulk_file']['name']) && $_FILES['bulk_file']['error'] === UPLOAD_ERR_OK) {
+            $fileContent = file_get_contents($_FILES['bulk_file']['tmp_name']);
+            $fileContent = trim($fileContent);
+
+            // Try parsing as JSON first
+            $jsonData = json_decode($fileContent, true);
+            if (is_array($jsonData)) {
+                foreach ($jsonData as $entry) {
+                    if (is_string($entry)) {
+                        // JSON array of strings: ["user|pass|email", ...]
+                        $lines[] = trim($entry);
+                    } elseif (is_array($entry)) {
+                        // JSON array of objects: [{"username":"..","password":"..","email":".."}]
+                        $u = $entry['username'] ?? $entry['user'] ?? '';
+                        $p = $entry['password'] ?? $entry['pass'] ?? '';
+                        $e = $entry['email'] ?? $entry['mail'] ?? '';
+                        if (!empty($u)) {
+                            $lines[] = "{$u}|{$p}|{$e}";
+                        }
+                    }
+                }
+            } else {
+                // Plain text file — each line is username|password|email
+                $fileLines = explode("\n", $fileContent);
+                foreach ($fileLines as $fl) {
+                    $fl = trim($fl);
+                    if (!empty($fl)) $lines[] = $fl;
+                }
+            }
+        }
+
+        // Source 2: Pasted raw text
+        if (!empty($rawText)) {
+            $pastedLines = explode("\n", $rawText);
+            foreach ($pastedLines as $pl) {
+                $pl = trim($pl);
+                if (!empty($pl)) $lines[] = $pl;
+            }
+        }
+
+        if (empty($lines)) {
+            setFlash('danger', 'Không có dữ liệu tài khoản để import');
+            redirect('/admin/mystery-bag/' . $bagId . '/items');
+        }
+
+        // Deduplicate
+        $lines = array_unique($lines);
+
+        $db = getDatabaseConnection();
+        $defaultProb = intval($_POST['default_probability'] ?? 10);
+        $count = 0;
+        $skipped = 0;
+
+        foreach ($lines as $line) {
+            $parts = explode('|', $line);
+            $username = trim($parts[0] ?? '');
+            $password = trim($parts[1] ?? '');
+            $email    = trim($parts[2] ?? '');
+
+            if (empty($username)) { $skipped++; continue; }
+
+            // Build content string
+            $content = "Tài khoản: {$username}";
+            if (!empty($password)) $content .= "\nMật khẩu: {$password}";
+            if (!empty($email))    $content .= "\nEmail: {$email}";
+
+            $stmt = $db->prepare("INSERT INTO mystery_bag_items (bag_id, name, value, content, probability, status) VALUES (?, ?, 0, ?, ?, 1)");
+            $stmt->execute([$bagId, $username, $content, $defaultProb]);
+            $count++;
+        }
+
+        $msg = "Đã import {$count} tài khoản thành công";
+        if ($skipped > 0) $msg .= " ({$skipped} dòng bỏ qua)";
+        setFlash('success', $msg);
+        redirect('/admin/mystery-bag/' . $bagId . '/items');
+    }
 }

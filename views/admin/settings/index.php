@@ -28,6 +28,16 @@
             <input type="text" name="bank_prefix" class="form-control" value="<?= e($settings['bank_prefix'] ?? 'NAP') ?>" placeholder="Ví dụ: NAP">
             <small class="form-hint"><i class="fas fa-lightbulb"></i> Nội dung CK: [tiền tố][mã user]. VD: NAP12345</small>
         </div>
+        <div class="form-group">
+            <label>Bank API URL</label>
+            <input type="url" name="bank_api_url" class="form-control" value="<?= e($settings['bank_api_url'] ?? '') ?>" placeholder="https://api.web2m.com/historyapimbfull">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> URL API kiểm tra giao dịch tự động (VD: web2m, sepay...)</small>
+        </div>
+        <div class="form-group">
+            <label>Bank API Token</label>
+            <input type="text" name="bank_api_token" class="form-control" value="<?= e($settings['bank_api_token'] ?? '') ?>" placeholder="Nhập API Token">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Token xác thực API ngân hàng. Lấy từ trang quản lý dịch vụ API</small>
+        </div>
     </div>
 
     <!-- Thông báo Nạp tiền -->
@@ -131,6 +141,45 @@
         <div class="form-group">
             <label>Điểm xanh mỗi lần điểm danh</label>
             <input type="number" name="checkin_green_points" class="form-control" value="<?= e($settings['checkin_green_points'] ?? '5') ?>">
+        </div>
+    </div>
+
+    <!-- SMM Panel API -->
+    <div class="form-card" style="margin-bottom:24px">
+        <h3 style="margin-bottom:4px"><i class="fas fa-server"></i> Cấu hình SMM Panel</h3>
+        <p class="form-section-note"><i class="fas fa-info-circle"></i> Kết nối với SMM Panel (web mẹ) để đồng bộ dịch vụ tăng follow, like, sub... Giá trị trong .env sẽ bị ghi đè nếu bạn nhập ở đây.</p>
+
+        <div class="form-group">
+            <label>SMM API URL</label>
+            <input type="url" name="smm_api_url" class="form-control" value="<?= e($settings['smm_api_url'] ?? '') ?>" placeholder="https://sub6sao.com/api/v2">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> URL API của SMM Panel (ví dụ: https://sub6sao.com/api/v2)</small>
+        </div>
+        <div class="form-group">
+            <label>SMM API Key</label>
+            <input type="text" name="smm_api_key" class="form-control" value="<?= e($settings['smm_api_key'] ?? '') ?>" placeholder="Nhập API Key từ SMM Panel">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Lấy API Key từ trang quản lý tài khoản trên SMM Panel</small>
+        </div>
+        <div class="form-group">
+            <label>Phần trăm markup giá (%)</label>
+            <input type="number" name="smm_price_markup" class="form-control" value="<?= e($settings['smm_price_markup'] ?? '60') ?>" min="0" max="500" placeholder="60">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Tỷ lệ cộng thêm vào giá gốc từ web mẹ. VD: 60 = bán giá gốc + 60%</small>
+        </div>
+    </div>
+
+    <!-- Telegram Bot -->
+    <div class="form-card" style="margin-bottom:24px">
+        <h3 style="margin-bottom:4px"><i class="fab fa-telegram-plane"></i> Cấu hình Telegram Bot</h3>
+        <p class="form-section-note"><i class="fas fa-info-circle"></i> Nhận thông báo đơn hàng, nạp tiền qua Telegram Bot. Tạo bot tại <a href="https://t.me/BotFather" target="_blank">@BotFather</a>.</p>
+
+        <div class="form-group">
+            <label>Bot Token</label>
+            <input type="text" name="telegram_bot_token" class="form-control" value="<?= e($settings['telegram_bot_token'] ?? '') ?>" placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxYZ">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Token từ @BotFather. VD: 123456789:ABCdef...</small>
+        </div>
+        <div class="form-group">
+            <label>Chat ID</label>
+            <input type="text" name="telegram_chat_id" class="form-control" value="<?= e($settings['telegram_chat_id'] ?? '') ?>" placeholder="-1001234567890">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> ID nhóm/kênh Telegram nhận thông báo. Dùng <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a> để lấy ID</small>
         </div>
     </div>
 

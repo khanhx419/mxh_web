@@ -201,10 +201,20 @@ try {
             `value` DECIMAL(15,2) NOT NULL,
             `content` TEXT,
             `probability` INT DEFAULT 10,
+            `status` TINYINT(1) DEFAULT 1,
             FOREIGN KEY (`bag_id`) REFERENCES `mystery_bags`(`id`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
     msg("✅ Table: mystery_bag_items");
+
+    // Thêm cột status vào mystery_bag_items (nếu chưa có)
+    $cols = $db->query("SHOW COLUMNS FROM `mystery_bag_items` LIKE 'status'")->fetchAll();
+    if (empty($cols)) {
+        $db->exec("ALTER TABLE `mystery_bag_items` ADD COLUMN `status` TINYINT(1) DEFAULT 1 AFTER `probability`");
+        msg("✅ Thêm cột status vào mystery_bag_items");
+    } else {
+        msg("⏭️ Cột status (mystery_bag_items) đã tồn tại");
+    }
 
     // 13. Mystery Bag History
     $db->exec("

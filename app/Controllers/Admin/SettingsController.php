@@ -34,10 +34,13 @@ class SettingsController extends Controller
         $db = getDatabaseConnection();
         $fields = [
             'bank_prefix', 'bank_acc_name', 'bank_acc_number', 'bank_name',
+            'bank_api_url', 'bank_api_token',
             'site_notice', 'wheel_spin_cost',
             'checkin_spins_per_day', 'checkin_bonus_day7', 'checkin_green_points',
             'deposit_notice', 'deposit_transfer_details',
-            'popup_enabled', 'popup_owner_name', 'popup_phone', 'popup_notice_text'
+            'popup_enabled', 'popup_owner_name', 'popup_phone', 'popup_notice_text',
+            'smm_api_url', 'smm_api_key', 'smm_price_markup',
+            'telegram_bot_token', 'telegram_chat_id'
         ];
 
         foreach ($fields as $f) {
@@ -120,6 +123,7 @@ class SettingsController extends Controller
 
         $db = getDatabaseConnection();
         $fields = [
+            'bank_api_url', 'bank_api_token',
             'deposit_discount',
             'card_api_url', 'card_partner_id', 'card_partner_key',
             'card_fees_viettel', 'card_fees_mobifone', 'card_fees_vinaphone',
