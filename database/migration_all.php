@@ -307,6 +307,51 @@ try {
     else {
         msg("⏭️ Cột green_points_total đã tồn tại");
     }
+
+    // Thêm cột chess_score vào users (nếu chưa có)
+    $cols = $db->query("SHOW COLUMNS FROM `users` LIKE 'chess_score'")->fetchAll();
+    if (empty($cols)) {
+        $db->exec("ALTER TABLE `users` ADD COLUMN `chess_score` INT DEFAULT 0 AFTER `green_points_total`");
+        msg("✅ Thêm cột chess_score vào users");
+    }
+    else {
+        msg("⏭️ Cột chess_score đã tồn tại");
+    }
+
+    // Thêm cột SMM vào services (nếu chưa có)
+    $smmServiceCols = [
+        'smm_service_id' => "INT DEFAULT NULL COMMENT 'ID dịch vụ trên web mẹ' AFTER `category_id`",
+        'smm_type' => "VARCHAR(50) DEFAULT NULL COMMENT 'Loại DV trên web mẹ' AFTER `smm_service_id`",
+        'refill' => "TINYINT(1) DEFAULT 0 COMMENT 'Có hỗ trợ refill' AFTER `max_quantity`",
+        'rate_original' => "DECIMAL(15,4) DEFAULT 0 COMMENT 'Giá gốc từ web mẹ (per 1000)' AFTER `price_per_1000`",
+    ];
+    foreach ($smmServiceCols as $col => $def) {
+        $check = $db->query("SHOW COLUMNS FROM `services` LIKE '{$col}'")->fetchAll();
+        if (empty($check)) {
+            $db->exec("ALTER TABLE `services` ADD COLUMN `{$col}` {$def}");
+            msg("✅ Thêm cột {$col} vào services");
+        } else {
+            msg("⏭️ Cột {$col} (services) đã tồn tại");
+        }
+    }
+
+    // Thêm cột SMM vào orders (nếu chưa có)
+    $smmOrderCols = [
+        'smm_order_id' => "INT DEFAULT NULL COMMENT 'Mã đơn trên web mẹ' AFTER `status`",
+        'smm_status' => "VARCHAR(50) DEFAULT NULL COMMENT 'Trạng thái trên web mẹ' AFTER `smm_order_id`",
+        'start_count' => "INT DEFAULT NULL COMMENT 'Số đếm bắt đầu' AFTER `smm_status`",
+        'remains' => "INT DEFAULT NULL COMMENT 'Số lượng còn lại' AFTER `start_count`",
+    ];
+    foreach ($smmOrderCols as $col => $def) {
+        $check = $db->query("SHOW COLUMNS FROM `orders` LIKE '{$col}'")->fetchAll();
+        if (empty($check)) {
+            $db->exec("ALTER TABLE `orders` ADD COLUMN `{$col}` {$def}");
+            msg("✅ Thêm cột {$col} vào orders");
+        } else {
+            msg("⏭️ Cột {$col} (orders) đã tồn tại");
+        }
+    }
+
     msg("\n=== PHẦN 4: Dữ liệu mẫu ===");
 
     // Settings mặc định

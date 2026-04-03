@@ -1,11 +1,11 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /mxh_web/public/
-    
+    RewriteBase /
+
     # Nếu file hoặc thư mục tồn tại thì phục vụ trực tiếp
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    
+
     # Chuyển tất cả request về index.php
     RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>

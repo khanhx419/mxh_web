@@ -75,6 +75,36 @@
     }
     @keyframes slideDown { from { opacity: 0; top: -40px; } to { opacity: 1; top: 20px; } }
 
+    /* === Valid Move Highlighting === */
+    .highlight-selected {
+        background: rgba(255, 255, 92, 0.45) !important;
+        box-shadow: inset 0 0 0 3px rgba(255, 215, 0, 0.5);
+    }
+    .highlight-valid-move {
+        background: radial-gradient(
+            circle at center,
+            rgba(0, 180, 80, 0.4) 22%,
+            transparent 23%
+        ) !important;
+    }
+    .highlight-capture {
+        background: radial-gradient(
+            circle at center,
+            transparent 50%,
+            rgba(0, 180, 80, 0.4) 51%,
+            rgba(0, 180, 80, 0.4) 68%,
+            transparent 69%
+        ) !important;
+    }
+    .highlight-check {
+        background: radial-gradient(
+            circle at center,
+            rgba(255, 0, 0, 0.6) 20%,
+            rgba(255, 0, 0, 0.2) 60%,
+            transparent 70%
+        ) !important;
+    }
+
     @media (max-width: 860px) {
         .chess-layout { grid-template-columns: 1fr; }
     }
@@ -194,21 +224,72 @@ document.addEventListener('DOMContentLoaded', function () {
         board = Chessboard('board', {
             draggable: true, position: 'start',
             onDragStart, onDrop, onSnapEnd,
+            onMouseoutSquare: clearHighlights,
             pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
         });
         $(window).resize(() => board && board.resize());
     }
 
+    // --- Valid Move Highlighting ---
+    function highlightMoves(square) {
+        clearHighlights();
+
+        // Highlight the selected piece's square
+        $('#board .square-' + square).addClass('highlight-selected');
+
+        // Get legal moves for this piece
+        const moves = game.moves({ square: square, verbose: true });
+        if (moves.length === 0) return;
+
+        moves.forEach(function (move) {
+            const $sq = $('#board .square-' + move.to);
+            if (move.captured || move.flags.indexOf('e') !== -1) {
+                $sq.addClass('highlight-capture');
+            } else {
+                $sq.addClass('highlight-valid-move');
+            }
+        });
+    }
+
+    function clearHighlights() {
+        $('#board .square-55d63').removeClass('highlight-selected highlight-valid-move highlight-capture highlight-check');
+    }
+
+    function highlightKingInCheck() {
+        if (!game.in_check()) return;
+        // Find the king's square
+        const turn = game.turn();
+        const board_state = game.board();
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = board_state[r][c];
+                if (piece && piece.type === 'k' && piece.color === turn) {
+                    const file = 'abcdefgh'[c];
+                    const rank = 8 - r;
+                    $('#board .square-' + file + rank).addClass('highlight-check');
+                    return;
+                }
+            }
+        }
+    }
+    // --- End Highlighting ---
+
     function onDragStart(src, piece) {
         if (!gameActive || game.game_over() || aiThinking || piece.search(/^b/) !== -1) return false;
+        highlightMoves(src);
     }
     function onDrop(src, tgt) {
+        clearHighlights();
         const move = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!move) return 'snapback';
         refreshUI();
         window.setTimeout(aiMove, 200);
     }
-    function onSnapEnd() { board.position(game.fen()); }
+    function onSnapEnd() {
+        board.position(game.fen());
+        clearHighlights();
+        highlightKingInCheck();
+    }
 
     function aiMove() {
         if (game.game_over() || !gameActive) return;
@@ -245,6 +326,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (game.in_check()) s += ' — <strong style="color:var(--accent-danger);">Chiếu!</strong>';
             $status.html(s);
         }
+        // Highlight king if in check
+        clearHighlights();
+        highlightKingInCheck();
     }
 
     function recordWin() {

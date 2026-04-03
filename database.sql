@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `password` VARCHAR(255) NOT NULL,
     `role` ENUM('admin', 'user') NOT NULL DEFAULT 'user',
     `balance` DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+    `green_points_total` INT DEFAULT 0,
+    `chess_score` INT DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -207,8 +209,9 @@ CREATE TABLE IF NOT EXISTS `green_points` (
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Thêm cột mở rộng từ PHP Migration
+-- Thêm cột mở rộng từ PHP Migration (safety net nếu bảng users đã tồn tại)
 ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `green_points_total` INT DEFAULT 0 AFTER `balance`;
+ALTER TABLE `users` ADD COLUMN IF NOT EXISTS `chess_score` INT DEFAULT 0 AFTER `green_points_total`;
 
 -- Thêm cột SMM (từ smm_migration.php) - Bỏ qua lỗi bỏ qua câu lệnh nếu cấu trúc DBMS phpmyadmin không báo lỗi
 ALTER TABLE `services` ADD COLUMN IF NOT EXISTS `smm_service_id` INT DEFAULT NULL COMMENT 'ID dịch vụ trên web mẹ' AFTER `category_id`;
