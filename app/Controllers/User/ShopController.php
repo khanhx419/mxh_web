@@ -8,7 +8,9 @@ class ShopController extends Controller
 
     public function index()
     {
-        redirect('/shop/games');
+        $this->view('user.shop_landing', [
+            'pageTitle' => 'Cửa Hàng'
+        ]);
     }
 
     /**

@@ -42,22 +42,36 @@
                         <i class="fas fa-home"></i> Trang chủ
                     </a>
                 </li>
-                <li>
-                    <a href="<?= url('/shop/games') ?>"
-                        class="<?= strpos($_SERVER['REQUEST_URI'], '/shop/games') !== false ? 'active' : '' ?>">
-                        <i class="fas fa-gamepad"></i> Tài khoản Game
+                <li class="sidebar-group">
+                    <a href="javascript:void(0)" class="sidebar-group-toggle <?= (strpos($_SERVER['REQUEST_URI'], '/shop') !== false || strpos($_SERVER['REQUEST_URI'], '/product') !== false || strpos($_SERVER['REQUEST_URI'], '/service') !== false) ? 'active open' : '' ?>" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('show')">
+                        <i class="fas fa-store"></i> Cửa Hàng
+                        <i class="fas fa-chevron-down sidebar-group-arrow"></i>
                     </a>
-                </li>
-                <li>
-                    <a href="<?= url('/shop/services') ?>"
-                        class="<?= strpos($_SERVER['REQUEST_URI'], '/shop/services') !== false ? 'active' : '' ?>">
-                        <i class="fas fa-share-nodes"></i> Dịch vụ MXH
-                    </a>
+                    <ul class="sidebar-submenu <?= (strpos($_SERVER['REQUEST_URI'], '/shop') !== false || strpos($_SERVER['REQUEST_URI'], '/product') !== false || strpos($_SERVER['REQUEST_URI'], '/service') !== false) ? 'show' : '' ?>">
+                        <li>
+                            <a href="<?= url('/shop/games') ?>"
+                                class="<?= strpos($_SERVER['REQUEST_URI'], '/shop/games') !== false ? 'active' : '' ?>">
+                                <i class="fas fa-gamepad"></i> Tài khoản Game
+                            </a>
+                        </li>
+                        <li>
+                            <a href="<?= url('/shop/services') ?>"
+                                class="<?= strpos($_SERVER['REQUEST_URI'], '/shop/services') !== false ? 'active' : '' ?>">
+                                <i class="fas fa-share-nodes"></i> Dịch vụ MXH
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <li>
                     <a href="<?= url('/search') ?>"
                         class="<?= strpos($_SERVER['REQUEST_URI'], '/search') !== false ? 'active' : '' ?>">
                         <i class="fas fa-magnifying-glass"></i> Tìm kiếm
+                    </a>
+                </li>
+                <li>
+                    <a href="<?= url('/banking') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/banking') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-wallet"></i> Nạp tiền
                     </a>
                 </li>
             </ul>
@@ -120,6 +134,12 @@
                         <i class="fas fa-headset"></i> Liên hệ
                     </a>
                 </li>
+                <li>
+                    <a href="<?= url('/colors') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/colors') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-palette"></i> Màu sắc
+                    </a>
+                </li>
             </ul>
         </nav>
 
@@ -153,32 +173,10 @@
         </div>
 
         <div class="topbar-actions">
-            <!-- Theme Picker -->
-            <div class="theme-picker" id="themePicker">
-                <button class="theme-picker-btn" id="themePickerBtn" title="Đổi giao diện">
-                    <i class="fas fa-palette"></i>
-                </button>
-                <div class="theme-picker-dropdown" id="themePickerDropdown">
-                    <button class="theme-option" data-theme-value="light">
-                        <span class="theme-swatch swatch-light"></span> Sáng
-                    </button>
-                    <button class="theme-option" data-theme-value="dark">
-                        <span class="theme-swatch swatch-dark"></span> Tối
-                    </button>
-                    <button class="theme-option" data-theme-value="gray">
-                        <span class="theme-swatch swatch-gray"></span> Xám
-                    </button>
-                    <button class="theme-option" data-theme-value="blue">
-                        <span class="theme-swatch swatch-blue"></span> Xanh dương
-                    </button>
-                    <button class="theme-option" data-theme-value="green">
-                        <span class="theme-swatch swatch-green"></span> Xanh lá
-                    </button>
-                    <button class="theme-option" data-theme-value="pink">
-                        <span class="theme-swatch swatch-pink"></span> Hồng
-                    </button>
-                </div>
-            </div>
+            <!-- Theme Color Link -->
+            <a href="<?= url('/colors') ?>" class="theme-picker-btn" title="Đổi giao diện">
+                <i class="fas fa-palette"></i>
+            </a>
 
             <?php if (isLoggedIn()): ?>
                 <div class="user-balance-pill">
@@ -236,8 +234,7 @@
             <div class="container">
                 <p>&copy;
                     <?= date('Y') ?>
-                    <?= e(APP_NAME) ?>. All Rights Reserved. | Được xây dựng với <i
-                        class="fas fa-heart text-danger"></i>
+                    <?= e(APP_NAME) ?>. All Rights Reserved.
                 </p>
             </div>
         </footer>

@@ -74,6 +74,7 @@ try {
     $router->get('/guide', 'User/PageController@guide');
     $router->get('/contact', 'User/PageController@contact');
     $router->post('/contact/send', 'User/PageController@submitContact');
+    $router->get('/colors', 'User/PageController@colors');
     $router->get('/lucky-wheel', 'User/LuckyWheelController@index');
     $router->post('/lucky-wheel/spin', 'User/LuckyWheelController@spin');
     $router->get('/mystery-bag', 'User/MysteryBagController@index');
@@ -136,6 +137,22 @@ try {
     $router->get('/admin/mystery-bag/edit/{id}', 'Admin/MysteryBagController@edit');
     $router->post('/admin/mystery-bag/update/{id}', 'Admin/MysteryBagController@update');
     $router->get('/admin/mystery-bag/delete/{id}', 'Admin/MysteryBagController@delete');
+
+    // Admin - Mystery Bag Items (Accounts)
+    $router->get('/admin/mystery-bag/{id}/items', 'Admin/MysteryBagController@items');
+    $router->get('/admin/mystery-bag/{id}/items/add', 'Admin/MysteryBagController@addItem');
+    $router->post('/admin/mystery-bag/{id}/items/store', 'Admin/MysteryBagController@storeItem');
+    $router->get('/admin/mystery-bag/items/edit/{id}', 'Admin/MysteryBagController@editItem');
+    $router->post('/admin/mystery-bag/items/update/{id}', 'Admin/MysteryBagController@updateItem');
+    $router->get('/admin/mystery-bag/items/delete/{id}', 'Admin/MysteryBagController@deleteItem');
+
+    // Admin - Events
+    $router->get('/admin/events', 'Admin/EventController@index');
+    $router->get('/admin/events/create', 'Admin/EventController@create');
+    $router->post('/admin/events/store', 'Admin/EventController@store');
+    $router->get('/admin/events/edit/{id}', 'Admin/EventController@edit');
+    $router->post('/admin/events/update/{id}', 'Admin/EventController@update');
+    $router->get('/admin/events/delete/{id}', 'Admin/EventController@delete');
 
     // Admin - Settings
     $router->get('/admin/settings', 'Admin/SettingsController@index');

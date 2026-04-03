@@ -36,7 +36,7 @@ class SettingsController extends Controller
             'bank_prefix', 'bank_acc_name', 'bank_acc_number', 'bank_name',
             'site_notice', 'wheel_spin_cost',
             'checkin_spins_per_day', 'checkin_bonus_day7', 'checkin_green_points',
-            'deposit_notice',
+            'deposit_notice', 'deposit_transfer_details',
             'popup_enabled', 'popup_owner_name', 'popup_phone', 'popup_notice_text'
         ];
 
@@ -65,6 +65,24 @@ class SettingsController extends Controller
                 $dbPath = 'uploads/logo/' . $fileName;
                 $stmt = $db->prepare("INSERT INTO settings (name, value) VALUES ('site_logo', ?) ON DUPLICATE KEY UPDATE value = ?");
                 $stmt->execute([$dbPath, $dbPath]);
+            }
+        }
+
+        // Xử lý QR Code upload
+        if (!empty($_FILES['deposit_qr_image']['name']) && $_FILES['deposit_qr_image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = BASE_PATH . '/public/uploads/qr/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+            $ext = strtolower(pathinfo($_FILES['deposit_qr_image']['name'], PATHINFO_EXTENSION));
+            $allowed = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+            if (in_array($ext, $allowed)) {
+                $fileName = 'qr_' . time() . '.' . $ext;
+                if (move_uploaded_file($_FILES['deposit_qr_image']['tmp_name'], $uploadDir . $fileName)) {
+                    $dbPath = 'uploads/qr/' . $fileName;
+                    $stmt = $db->prepare("INSERT INTO settings (name, value) VALUES ('deposit_qr_image', ?) ON DUPLICATE KEY UPDATE value = ?");
+                    $stmt->execute([$dbPath, $dbPath]);
+                }
             }
         }
 

@@ -125,117 +125,69 @@
         </div>
     </div>
 
-    <!-- Game Accounts Section -->
+    <!-- Cửa Hàng (Shop Folder) -->
     <section class="section">
         <div class="section-title">
-            <i class="fas fa-gamepad"></i>
-            <h2>Tài Khoản Game Nổi Bật</h2>
-            <a href="<?= url('/shop/games') ?>" class="view-all">Xem tất cả <i class="fas fa-arrow-right"></i></a>
+            <i class="fas fa-store"></i>
+            <h2>Cửa Hàng</h2>
         </div>
 
-        <!-- Category Tags -->
-        <div class="category-tags">
-            <?php foreach ($gameCategories as $cat): ?>
-                <a href="<?= url('/shop/games?category=' . $cat['id']) ?>" class="category-tag">
-                    <i class="fas <?= e($cat['icon']) ?>"></i>
-                    <?= e($cat['name']) ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
+        <div class="shop-folder-grid">
+            <!-- Game Accounts Folder -->
+            <a href="<?= url('/shop/games') ?>" class="shop-folder-card shop-folder-games">
+                <div class="shop-folder-glow"></div>
+                <div class="shop-folder-icon">
+                    <i class="fas fa-gamepad"></i>
+                </div>
+                <div class="shop-folder-info">
+                    <h3>Tài Khoản Game</h3>
+                    <p>Mua acc game chất lượng cao với giá ưu đãi</p>
+                    <div class="shop-folder-meta">
+                        <span class="shop-folder-count"><i class="fas fa-box"></i> <?= count($products) ?>+ sản phẩm</span>
+                        <span class="shop-folder-cats"><i class="fas fa-tags"></i> <?= count($gameCategories) ?> danh mục</span>
+                    </div>
+                </div>
+                <div class="shop-folder-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
 
-        <?php if (empty($products)): ?>
-            <div class="empty-state">
-                <i class="fas fa-box-open"></i>
-                <h3>Chưa có sản phẩm nào</h3>
-                <p>Hãy quay lại sau nhé!</p>
-            </div>
-        <?php else: ?>
-            <div class="product-grid">
-                <?php foreach ($products as $product): ?>
-                    <a href="<?= url('/product/' . $product['id']) ?>" class="card">
-                        <?php if ($product['image']): ?>
-                            <img src="<?= asset('uploads/' . $product['image']) ?>" alt="<?= e($product['title']) ?>"
-                                class="card-img">
-                        <?php else: ?>
-                            <div class="card-img-placeholder">
-                                <i class="fas fa-gamepad"></i>
-                            </div>
-                        <?php endif; ?>
-                        <div class="card-body">
-                            <div class="card-title">
-                                <?= e($product['title']) ?>
-                            </div>
-                            <div class="card-text">
-                                <?= e($product['description']) ?>
-                            </div>
-                            <div class="card-price">
-                                <?= formatMoney($product['price']) ?>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <span class="badge badge-info">
-                                <?= e($product['category_name']) ?>
-                            </span>
-                            <span class="badge badge-success">Còn hàng</span>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+            <!-- Social Media Folder -->
+            <a href="<?= url('/shop/services') ?>" class="shop-folder-card shop-folder-social">
+                <div class="shop-folder-glow"></div>
+                <div class="shop-folder-icon">
+                    <i class="fas fa-share-nodes"></i>
+                </div>
+                <div class="shop-folder-info">
+                    <h3>Dịch Vụ Mạng Xã Hội</h3>
+                    <p>Tăng tương tác Facebook, TikTok, Instagram, YouTube</p>
+                    <div class="shop-folder-meta">
+                        <span class="shop-folder-count"><i class="fas fa-cogs"></i> <?= count($services) ?>+ dịch vụ</span>
+                        <span class="shop-folder-cats"><i class="fas fa-tags"></i> <?= count($socialCategories) ?> danh mục</span>
+                    </div>
+                </div>
+                <div class="shop-folder-arrow"><i class="fas fa-chevron-right"></i></div>
+            </a>
+        </div>
     </section>
 
-    <!-- Social Services Section -->
-    <section class="section">
-        <div class="section-title">
-            <i class="fas fa-share-nodes"></i>
-            <h2>Dịch Vụ Mạng Xã Hội</h2>
-            <a href="<?= url('/shop/services') ?>" class="view-all">Xem tất cả <i class="fas fa-arrow-right"></i></a>
-        </div>
-
-        <!-- Category Tags -->
-        <div class="category-tags">
-            <?php foreach ($socialCategories as $cat): ?>
-                <a href="<?= url('/shop/services?category=' . $cat['id']) ?>" class="category-tag">
-                    <i class="fab <?= e($cat['icon']) ?>"></i>
-                    <?= e($cat['name']) ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
-
-        <?php if (empty($services)): ?>
-            <div class="empty-state">
-                <i class="fas fa-box-open"></i>
-                <h3>Chưa có dịch vụ nào</h3>
-                <p>Hãy quay lại sau nhé!</p>
-            </div>
-        <?php else: ?>
-            <div class="product-grid">
-                <?php foreach ($services as $service): ?>
-                    <a href="<?= url('/service/' . $service['id']) ?>" class="card">
-                        <div class="card-img-placeholder">
-                            <i
-                                class="fab <?= e($service['category_name'] === 'Facebook' ? 'fa-facebook' : ($service['category_name'] === 'TikTok' ? 'fa-tiktok' : ($service['category_name'] === 'Instagram' ? 'fa-instagram' : ($service['category_name'] === 'YouTube' ? 'fa-youtube' : 'fa-share-nodes')))) ?>"></i>
-                        </div>
-                        <div class="card-body">
-                            <div class="card-title">
-                                <?= e($service['name']) ?>
-                            </div>
-                            <div class="card-text">
-                                <?= e($service['description']) ?>
-                            </div>
-                            <div class="card-price">
-                                <?= formatMoney($service['price_per_1000']) ?>/1000
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <span class="badge badge-primary">
-                                <?= e($service['category_name']) ?>
-                            </span>
-                            <span class="badge badge-success">Hoạt động</span>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-    </section>
+    <style>
+    .shop-folder-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+    .shop-folder-card{display:flex;align-items:center;gap:18px;padding:24px 28px;background:var(--gradient-card);border:1px solid var(--border-color);border-radius:16px;text-decoration:none;color:var(--text-primary);position:relative;overflow:hidden;transition:all .3s cubic-bezier(.4,0,.2,1)}
+    .shop-folder-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--accent-primary)}
+    .shop-folder-card:hover .shop-folder-arrow{transform:translateX(4px);color:var(--accent-primary)}
+    .shop-folder-card:hover .shop-folder-glow{opacity:1}
+    .shop-folder-glow{position:absolute;top:-50%;right:-50%;width:100%;height:100%;border-radius:50%;opacity:0;transition:opacity .4s ease;pointer-events:none}
+    .shop-folder-games .shop-folder-glow{background:radial-gradient(circle,rgba(99,102,241,.08) 0%,transparent 70%)}
+    .shop-folder-social .shop-folder-glow{background:radial-gradient(circle,rgba(236,72,153,.08) 0%,transparent 70%)}
+    .shop-folder-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;flex-shrink:0}
+    .shop-folder-games .shop-folder-icon{background:linear-gradient(135deg,#6366f1,#a855f7)}
+    .shop-folder-social .shop-folder-icon{background:linear-gradient(135deg,#ec4899,#f472b6)}
+    .shop-folder-info{flex:1;min-width:0}
+    .shop-folder-info h3{font-size:1.08rem;font-weight:700;margin-bottom:4px}
+    .shop-folder-info p{font-size:.82rem;color:var(--text-secondary);margin-bottom:8px;line-height:1.4}
+    .shop-folder-meta{display:flex;gap:14px;flex-wrap:wrap}
+    .shop-folder-meta span{font-size:.75rem;color:var(--text-muted);display:flex;align-items:center;gap:4px}
+    .shop-folder-meta i{font-size:.7rem;color:var(--accent-primary)}
+    .shop-folder-arrow{color:var(--text-muted);font-size:1.1rem;flex-shrink:0;transition:all .3s ease}
+    @media(max-width:600px){.shop-folder-grid{grid-template-columns:1fr}.shop-folder-card{padding:18px 20px}}
+    </style>
 </div>

@@ -2,7 +2,7 @@
     <h1><i class="fas fa-cogs"></i> Cài Đặt Chung</h1>
 </div>
 
-<form id="settings-form" action="<?= url('/admin/settings/update') ?>" method="POST">
+<form id="settings-form" action="<?= url('/admin/settings/update') ?>" method="POST" enctype="multipart/form-data">
     <?= csrfField() ?>
     <input type="hidden" name="site_logo_data" id="site_logo_data">
 
@@ -39,6 +39,30 @@
             <label>Nội dung cảnh báo</label>
             <textarea name="deposit_notice" class="form-control" rows="3"><?= e($settings['deposit_notice'] ?? 'Vui lòng nạp theo nội dung sau: [nội dung]. Nếu sau 10p tiền không vào tài khoản thì liên hệ admin.') ?></textarea>
             <small class="form-hint"><i class="fas fa-lightbulb"></i> <code>[nội dung]</code> sẽ tự động được thay bằng mã CK của từng user</small>
+        </div>
+    </div>
+
+    <!-- Cấu hình trang Nạp tiền -->
+    <div class="form-card" style="margin-bottom:24px">
+        <h3 style="margin-bottom:4px"><i class="fas fa-qrcode"></i> Cấu hình trang Nạp tiền</h3>
+        <p class="form-section-note"><i class="fas fa-info-circle"></i> Tùy chỉnh hình QR Code và nội dung chuyển khoản hiển thị cho người dùng trên trang Nạp tiền.</p>
+
+        <div class="form-group">
+            <label>Hình QR Code tùy chỉnh</label>
+            <?php if (!empty($settings['deposit_qr_image'])): ?>
+                <div style="margin-bottom:8px">
+                    <img src="<?= asset($settings['deposit_qr_image']) ?>" style="max-width:200px;border-radius:12px;border:1px solid var(--border-color);padding:4px;background:#fff">
+                    <p style="font-size:.78rem;color:var(--text-muted);margin-top:4px"><i class="fas fa-check-circle" style="color:var(--accent-success)"></i> Đang sử dụng QR tùy chỉnh</p>
+                </div>
+            <?php endif; ?>
+            <input type="file" name="deposit_qr_image" class="form-control" accept="image/*">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Upload ảnh QR Code tùy chỉnh. Để trống sẽ dùng QR tự động từ VietQR.</small>
+        </div>
+
+        <div class="form-group">
+            <label>Nội dung chuyển khoản hiển thị</label>
+            <textarea name="deposit_transfer_details" class="form-control" rows="3" placeholder="Ví dụ: Chuyển khoản theo cú pháp: NAP [mã user]..."><?= e($settings['deposit_transfer_details'] ?? '') ?></textarea>
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Nội dung bổ sung hiển thị bên dưới QR code. Để trống sẽ dùng mặc định.</small>
         </div>
     </div>
 

@@ -23,10 +23,21 @@
                 <h3 class="card-title text-center mb-4">Thông tin chuyển khoản</h3>
 
                 <div class="text-center mb-4">
-                    <img src="https://img.vietqr.io/image/<?= e($bankConfig['bank_name']) ?>-<?= e($bankConfig['bank_acc_number']) ?>-compact2.jpg?amount=0&addInfo=<?= e($transferContent) ?>"
-                        alt="QR Code"
-                        style="max-width: 250px; border-radius: 10px; border: 1px solid var(--border-color); padding: 5px; background: white;">
+                    <?php if (!empty($depositQrImage)): ?>
+                        <img src="<?= asset($depositQrImage) ?>"
+                            alt="QR Code"
+                            style="max-width: 250px; border-radius: 10px; border: 1px solid var(--border-color); padding: 5px; background: white;">
+                    <?php else: ?>
+                        <img src="https://img.vietqr.io/image/<?= e($bankConfig['bank_name']) ?>-<?= e($bankConfig['bank_acc_number']) ?>-compact2.jpg?amount=0&addInfo=<?= e($transferContent) ?>"
+                            alt="QR Code"
+                            style="max-width: 250px; border-radius: 10px; border: 1px solid var(--border-color); padding: 5px; background: white;">
+                    <?php endif; ?>
                     <p class="text-secondary mt-2"><small>Quét mã QR để tự động điền thông tin</small></p>
+                    <?php if (!empty($depositTransferDetails)): ?>
+                        <div style="margin-top: 10px; padding: 10px 16px; background: rgba(99,102,241,.06); border-left: 3px solid var(--accent-primary); border-radius: 0 8px 8px 0; text-align: left; font-size: 0.85rem; color: var(--text-secondary);">
+                            <?= nl2br(e($depositTransferDetails)) ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="bank-details"

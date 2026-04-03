@@ -32,6 +32,7 @@
                             <?= $bag['status'] ? '<span class="badge badge-success">Bật</span>' : '<span class="badge badge-danger">Tắt</span>' ?>
                         </td>
                         <td>
+                            <a href="<?= url('/admin/mystery-bag/'.$bag['id'].'/items') ?>" class="btn btn-sm btn-primary" title="Quản lý tài khoản"><i class="fas fa-list"></i></a>
                             <a href="<?= url('/admin/mystery-bag/edit/'.$bag['id']) ?>" class="btn btn-sm btn-secondary"><i class="fas fa-edit"></i></a>
                             <a href="<?= url('/admin/mystery-bag/delete/'.$bag['id']) ?>" class="btn btn-sm btn-danger" onclick="return confirm('Xoá túi này?')"><i class="fas fa-trash"></i></a>
                         </td>

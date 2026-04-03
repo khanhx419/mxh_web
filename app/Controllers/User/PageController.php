@@ -169,6 +169,16 @@ class PageController extends Controller
     }
 
     /**
+     * Trang Màu sắc (Theme colors)
+     */
+    public function colors()
+    {
+        $this->view('user.colors', [
+            'pageTitle' => 'Màu sắc giao diện'
+        ]);
+    }
+
+    /**
      * Xử lý form liên hệ
      */
     public function submitContact()

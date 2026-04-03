@@ -115,6 +115,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="<?= url('/admin/events') ?>"
+                        class="<?= strpos($_SERVER['REQUEST_URI'], '/admin/events') !== false ? 'active' : '' ?>">
+                        <i class="fas fa-calendar-star"></i> Sự kiện
+                    </a>
+                </li>
+                <li>
                     <a href="<?= url('/admin/settings') ?>"
                         class="<?= strpos($_SERVER['REQUEST_URI'], '/admin/settings') !== false ? 'active' : '' ?>">
                         <i class="fas fa-cogs"></i> Cấu hình

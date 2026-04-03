@@ -191,6 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let stockfish = null, board = null, game = new Chess();
     let gameActive = false, aiThinking = false;
+    let selectedSquare = null; // For two-click move (chess.com style)
     const $status = $('#status'), $body = $('#moves-body');
 
     // Load Stockfish via blob worker (bypass CORS)
@@ -224,10 +225,68 @@ document.addEventListener('DOMContentLoaded', function () {
         board = Chessboard('board', {
             draggable: true, position: 'start',
             onDragStart, onDrop, onSnapEnd,
-            onMouseoutSquare: clearHighlights,
             pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
         });
         $(window).resize(() => board && board.resize());
+
+        // Two-click move handler (chess.com style)
+        $('#board').on('click', '.square-55d63', function () {
+            if (!gameActive || game.game_over() || aiThinking) return;
+
+            // Determine the square from the element's class
+            const classes = $(this).attr('class').split(/\s+/);
+            let clickedSquare = null;
+            for (let i = 0; i < classes.length; i++) {
+                const match = classes[i].match(/^square-([a-h][1-8])$/);
+                if (match) { clickedSquare = match[1]; break; }
+            }
+            if (!clickedSquare) return;
+
+            const clickedPiece = game.get(clickedSquare);
+
+            // Case 1: No piece selected yet — select this piece if it's ours
+            if (!selectedSquare) {
+                if (clickedPiece && clickedPiece.color === 'w') {
+                    selectedSquare = clickedSquare;
+                    highlightMoves(clickedSquare);
+                }
+                return;
+            }
+
+            // Case 2: A piece is already selected
+            // If clicking the same square, deselect
+            if (selectedSquare === clickedSquare) {
+                selectedSquare = null;
+                clearHighlights();
+                return;
+            }
+
+            // If clicking another own piece, switch selection
+            if (clickedPiece && clickedPiece.color === 'w') {
+                selectedSquare = clickedSquare;
+                highlightMoves(clickedSquare);
+                return;
+            }
+
+            // Try to move from selectedSquare to clickedSquare
+            const move = game.move({
+                from: selectedSquare,
+                to: clickedSquare,
+                promotion: 'q'
+            });
+
+            if (move) {
+                board.position(game.fen());
+                selectedSquare = null;
+                clearHighlights();
+                refreshUI();
+                window.setTimeout(aiMove, 200);
+            } else {
+                // Invalid move — deselect
+                selectedSquare = null;
+                clearHighlights();
+            }
+        });
     }
 
     // --- Valid Move Highlighting ---
@@ -257,7 +316,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function highlightKingInCheck() {
         if (!game.in_check()) return;
-        // Find the king's square
         const turn = game.turn();
         const board_state = game.board();
         for (let r = 0; r < 8; r++) {
@@ -276,10 +334,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function onDragStart(src, piece) {
         if (!gameActive || game.game_over() || aiThinking || piece.search(/^b/) !== -1) return false;
+        selectedSquare = null; // Clear click-selection when dragging
         highlightMoves(src);
     }
     function onDrop(src, tgt) {
         clearHighlights();
+        selectedSquare = null;
         const move = game.move({ from: src, to: tgt, promotion: 'q' });
         if (!move) return 'snapback';
         refreshUI();
@@ -348,6 +408,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#btn-new').click(function () {
         game.reset(); board.start();
         $body.empty(); gameActive = true; aiThinking = false;
+        selectedSquare = null; clearHighlights();
         $status.html('Lượt: Trắng (Bạn)');
     });
 

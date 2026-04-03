@@ -6,45 +6,8 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // ==========================================
-    // THEME PICKER (Multi-theme)
+    // THEME (applied via localStorage in head)
     // ==========================================
-    const themePickerBtn = document.getElementById('themePickerBtn');
-    const themePickerDropdown = document.getElementById('themePickerDropdown');
-
-    if (themePickerBtn && themePickerDropdown) {
-        // Toggle dropdown
-        themePickerBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            themePickerDropdown.classList.toggle('show');
-            updateActiveThemeOption();
-        });
-
-        // Theme options
-        themePickerDropdown.querySelectorAll('.theme-option').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                const theme = this.getAttribute('data-theme-value');
-                document.documentElement.setAttribute('data-theme', theme);
-                localStorage.setItem('theme', theme);
-                themePickerDropdown.classList.remove('show');
-                updateActiveThemeOption();
-            });
-        });
-
-        // Mark current active
-        function updateActiveThemeOption() {
-            const current = document.documentElement.getAttribute('data-theme') || 'light';
-            themePickerDropdown.querySelectorAll('.theme-option').forEach(function(btn) {
-                btn.classList.toggle('active', btn.getAttribute('data-theme-value') === current);
-            });
-        }
-
-        // Close on outside click
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.theme-picker')) {
-                themePickerDropdown.classList.remove('show');
-            }
-        });
-    }
 
     // ==========================================
     // SIDEBAR TOGGLE (Mobile)
@@ -91,15 +54,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ==========================================
-    // AUTO-DISMISS ALERTS
+    // PERSISTENT ALERTS (Manual Close)
     // ==========================================
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
-        setTimeout(() => {
+        // Add close button if not already present
+        if (!alert.querySelector('.alert-close')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'alert-close';
+            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            closeBtn.setAttribute('aria-label', 'Đóng');
+            alert.appendChild(closeBtn);
+        }
+        // Close on click
+        alert.querySelector('.alert-close').addEventListener('click', function() {
             alert.style.opacity = '0';
             alert.style.transform = 'translateY(-10px)';
             setTimeout(() => alert.remove(), 300);
-        }, 5000);
+        });
     });
 
     // ==========================================

@@ -92,4 +92,111 @@ class MysteryBagController extends Controller
         setFlash('success', 'Đã xoá túi mù');
         redirect('/admin/mystery-bag');
     }
+
+    // ===== ITEM / ACCOUNT MANAGEMENT =====
+
+    public function items($bagId)
+    {
+        $bagModel = $this->model('MysteryBag');
+        $bag = $bagModel->findById($bagId);
+        if (!$bag) { setFlash('danger', 'Không tìm thấy túi'); redirect('/admin/mystery-bag'); }
+
+        $items = $bagModel->getItems($bagId);
+
+        $this->view('admin.mystery_bag.items', [
+            'pageTitle' => 'Tài khoản - ' . $bag['name'],
+            'bag' => $bag,
+            'items' => $items
+        ], 'admin');
+    }
+
+    public function addItem($bagId)
+    {
+        $bagModel = $this->model('MysteryBag');
+        $bag = $bagModel->findById($bagId);
+        if (!$bag) { setFlash('danger', 'Không tìm thấy túi'); redirect('/admin/mystery-bag'); }
+
+        $this->view('admin.mystery_bag.item_form', [
+            'pageTitle' => 'Thêm tài khoản - ' . $bag['name'],
+            'bag' => $bag,
+            'item' => null
+        ], 'admin');
+    }
+
+    public function storeItem($bagId)
+    {
+        if (!verifyCsrf()) { setFlash('danger', 'Phiên hết hạn'); redirect('/admin/mystery-bag/' . $bagId . '/items'); }
+
+        $db = getDatabaseConnection();
+        $stmt = $db->prepare("INSERT INTO mystery_bag_items (bag_id, name, value, content, probability) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $bagId,
+            $_POST['name'],
+            $_POST['value'] ?? 0,
+            $_POST['content'] ?? '',
+            $_POST['probability'] ?? 10
+        ]);
+
+        setFlash('success', 'Thêm tài khoản thành công');
+        redirect('/admin/mystery-bag/' . $bagId . '/items');
+    }
+
+    public function editItem($itemId)
+    {
+        $db = getDatabaseConnection();
+        $stmt = $db->prepare("SELECT * FROM mystery_bag_items WHERE id = ?");
+        $stmt->execute([$itemId]);
+        $item = $stmt->fetch();
+        if (!$item) { setFlash('danger', 'Không tìm thấy'); redirect('/admin/mystery-bag'); }
+
+        $bagModel = $this->model('MysteryBag');
+        $bag = $bagModel->findById($item['bag_id']);
+
+        $this->view('admin.mystery_bag.item_form', [
+            'pageTitle' => 'Sửa tài khoản',
+            'bag' => $bag,
+            'item' => $item
+        ], 'admin');
+    }
+
+    public function updateItem($itemId)
+    {
+        if (!verifyCsrf()) { setFlash('danger', 'Phiên hết hạn'); redirect('/admin/mystery-bag'); }
+
+        $db = getDatabaseConnection();
+        
+        // Get bag_id first
+        $stmt = $db->prepare("SELECT bag_id FROM mystery_bag_items WHERE id = ?");
+        $stmt->execute([$itemId]);
+        $item = $stmt->fetch();
+        if (!$item) { setFlash('danger', 'Không tìm thấy'); redirect('/admin/mystery-bag'); }
+
+        $stmt = $db->prepare("UPDATE mystery_bag_items SET name = ?, value = ?, content = ?, probability = ? WHERE id = ?");
+        $stmt->execute([
+            $_POST['name'],
+            $_POST['value'] ?? 0,
+            $_POST['content'] ?? '',
+            $_POST['probability'] ?? 10,
+            $itemId
+        ]);
+
+        setFlash('success', 'Cập nhật thành công');
+        redirect('/admin/mystery-bag/' . $item['bag_id'] . '/items');
+    }
+
+    public function deleteItem($itemId)
+    {
+        $db = getDatabaseConnection();
+        
+        $stmt = $db->prepare("SELECT bag_id FROM mystery_bag_items WHERE id = ?");
+        $stmt->execute([$itemId]);
+        $item = $stmt->fetch();
+        $bagId = $item ? $item['bag_id'] : '';
+
+        $stmt = $db->prepare("DELETE FROM mystery_bag_items WHERE id = ?");
+        $stmt->execute([$itemId]);
+
+        setFlash('success', 'Đã xoá tài khoản');
+        redirect('/admin/mystery-bag/' . $bagId . '/items');
+    }
 }

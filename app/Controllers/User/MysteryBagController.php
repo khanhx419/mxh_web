@@ -140,32 +140,54 @@ class MysteryBagController extends Controller
             $transModel->log($userId, 'mystery_bag_buy', $price, $newBalance, 'Mua túi mù: ' . $bag['name']);
         }
 
-        // === LOGIC QUAY MỚI ===
-        // 80% ra "Chúc may mắn lần sau" (không nhận gì)
-        // 20% ra tiền bằng đúng giá túi
-        $randomChance = mt_rand(1, 100);
+        // === LOGIC QUAY ===
+        // Nếu có items trong DB → dùng hệ thống xác suất theo items
+        // Nếu không có items → fallback 80/20 cũ
+        $items = $bagModel->getItems($bagId);
 
-        if ($randomChance <= 80) {
-            // 80% - Chúc may mắn lần sau
-            $itemName = 'Chúc May Mắn Lần Sau';
-            $itemContent = 'Rất tiếc, chúc bạn may mắn lần sau nhé! 🍀';
-            $itemValue = 0;
+        if (!empty($items)) {
+            // --- Item-based probability ---
+            $wonItem = $bagModel->open($bagId);
 
-            // Lưu lịch sử
-            $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
+            if ($wonItem) {
+                $itemName = $wonItem['name'];
+                $itemContent = $wonItem['content'];
+                $itemValue = intval($wonItem['value']);
+
+                if ($itemValue > 0) {
+                    // Cộng tiền thưởng
+                    $userModel->updateBalance($userId, $itemValue);
+                    $finalBalance = $userModel->getBalance($userId);
+                    $transModel->log($userId, 'mystery_bag_reward', $itemValue, $finalBalance, 'Phần thưởng túi mù: ' . $itemName);
+                }
+
+                // Lưu lịch sử
+                $bagModel->logHistory($userId, $bagId, $wonItem);
+            } else {
+                $itemName = 'Chúc May Mắn Lần Sau';
+                $itemContent = 'Rất tiếc, chúc bạn may mắn lần sau nhé! 🍀';
+                $itemValue = 0;
+                $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
+            }
         } else {
-            // 20% - Nhận tiền bằng đúng giá túi
-            $itemName = 'Thưởng ' . formatMoney($price);
-            $itemContent = 'Bạn nhận được ' . formatMoney($price) . ' vào tài khoản!';
-            $itemValue = $price;
+            // --- Fallback: 80/20 logic ---
+            $randomChance = mt_rand(1, 100);
 
-            // Cộng tiền thưởng
-            $userModel->updateBalance($userId, $itemValue);
-            $finalBalance = $userModel->getBalance($userId);
-            $transModel->log($userId, 'mystery_bag_reward', $itemValue, $finalBalance, 'Phần thưởng túi mù: ' . $itemName);
+            if ($randomChance <= 80) {
+                $itemName = 'Chúc May Mắn Lần Sau';
+                $itemContent = 'Rất tiếc, chúc bạn may mắn lần sau nhé! 🍀';
+                $itemValue = 0;
+                $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
+            } else {
+                $itemName = 'Thưởng ' . formatMoney($price);
+                $itemContent = 'Bạn nhận được ' . formatMoney($price) . ' vào tài khoản!';
+                $itemValue = $price;
 
-            // Lưu lịch sử
-            $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
+                $userModel->updateBalance($userId, $itemValue);
+                $finalBalance = $userModel->getBalance($userId);
+                $transModel->log($userId, 'mystery_bag_reward', $itemValue, $finalBalance, 'Phần thưởng túi mù: ' . $itemName);
+                $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
+            }
         }
 
         // Cập nhật session balance
@@ -179,7 +201,7 @@ class MysteryBagController extends Controller
             'item_name' => $itemName,
             'item_content' => $itemContent,
             'item_value' => $itemValue,
-            'is_lucky' => ($randomChance > 80),
+            'is_lucky' => ($itemValue > 0),
             'message' => ($itemValue > 0) 
                 ? 'Chúc mừng! Bạn đã nhận được: ' . $itemName 
                 : $itemContent,
