@@ -187,7 +187,7 @@ class PageController extends Controller
         }
 
         $userId = $_SESSION['user_id'];
-        $pointsRequired = 30;
+        $pointsRequired = 100;
         $moneyReward = 10000; // 10,000 VNĐ
 
         try {

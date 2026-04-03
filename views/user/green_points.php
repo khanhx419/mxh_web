@@ -22,7 +22,7 @@
                     <div style="background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(99,102,241,0.08)); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
                             <div style="text-align: center;">
-                                <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-success);">30</div>
+                                <div style="font-size: 1.6rem; font-weight: 800; color: var(--accent-success);">100</div>
                                 <div style="font-size: 0.75rem; color: var(--text-muted);">điểm xanh</div>
                             </div>
                             <i class="fas fa-arrow-right" style="color: var(--accent-primary); font-size: 1.2rem;"></i>
@@ -33,13 +33,13 @@
                         </div>
                     </div>
                     <?php if (isLoggedIn()): ?>
-                        <?php if ($totalPoints >= 30): ?>
+                        <?php if ($totalPoints >= 100): ?>
                             <button class="btn btn-primary" id="btn-exchange-gp" style="width: 100%;">
-                                <i class="fas fa-exchange-alt"></i> Đổi 30 Điểm → 10,000đ
+                                <i class="fas fa-exchange-alt"></i> Đổi 100 Điểm → 10,000đ
                             </button>
                         <?php else: ?>
                             <button class="btn btn-secondary" disabled style="width: 100%; opacity: 0.5;">
-                                <i class="fas fa-lock"></i> Cần thêm <?= 30 - $totalPoints ?> điểm nữa
+                                <i class="fas fa-lock"></i> Cần thêm <?= 100 - $totalPoints ?> điểm nữa
                             </button>
                         <?php endif; ?>
                     <?php else: ?>
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btn) {
         var csrfToken = '<?= $_SESSION['csrf_token'] ?? '' ?>';
         btn.addEventListener('click', function() {
-            if (!confirm('Bạn muốn đổi 30 điểm xanh lấy 10,000đ?')) return;
+            if (!confirm('Bạn muốn đổi 100 điểm xanh lấy 10,000đ?')) return;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
             var resultEl = document.getElementById('exchange-result');
@@ -177,24 +177,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     var balEl = document.querySelector('.user-balance-amount');
                     if (balEl) balEl.textContent = data.new_balance;
                     // Disable button if not enough points
-                    if (data.new_points < 30) {
-                        btn.innerHTML = '<i class="fas fa-lock"></i> Cần thêm ' + (30 - data.new_points) + ' điểm nữa';
+                    if (data.new_points < 100) {
+                        btn.innerHTML = '<i class="fas fa-lock"></i> Cần thêm ' + (100 - data.new_points) + ' điểm nữa';
                         btn.className = 'btn btn-secondary';
                         btn.style.opacity = '0.5';
                     } else {
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Đổi 30 Điểm → 10,000đ';
+                        btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Đổi 100 Điểm → 10,000đ';
                     }
                 } else {
                     resultEl.innerHTML = '<span style="color:var(--accent-danger);"><i class="fas fa-exclamation-triangle"></i> ' + data.message + '</span>';
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Đổi 30 Điểm → 10,000đ';
+                    btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Đổi 100 Điểm → 10,000đ';
                 }
             }).catch(function() {
                 resultEl.style.display = 'block';
                 resultEl.innerHTML = '<span style="color:var(--accent-danger);">Lỗi kết nối!</span>';
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Đổi 30 Điểm → 10,000đ';
+                btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Đổi 100 Điểm → 10,000đ';
             });
         });
     }
