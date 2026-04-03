@@ -34,7 +34,9 @@ class MysteryBagController extends Controller
         if (!empty($_FILES['image']['name'])) {
             $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
             $image = uniqid('bag_') . '.' . $ext;
-            move_uploaded_file($_FILES['image']['tmp_name'], BASE_PATH . '/public/uploads/mystery_bags/' . $image);
+            $dir = BASE_PATH . '/public/uploads/mystery_bags/';
+            if (!is_dir($dir)) mkdir($dir, 0777, true);
+            move_uploaded_file($_FILES['image']['tmp_name'], $dir . $image);
         }
 
         $bagModel = $this->model('MysteryBag');
@@ -77,7 +79,9 @@ class MysteryBagController extends Controller
         if (!empty($_FILES['image']['name'])) {
             $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
             $data['image'] = uniqid('bag_') . '.' . $ext;
-            move_uploaded_file($_FILES['image']['tmp_name'], BASE_PATH . '/public/uploads/mystery_bags/' . $data['image']);
+            $dir = BASE_PATH . '/public/uploads/mystery_bags/';
+            if (!is_dir($dir)) mkdir($dir, 0777, true);
+            move_uploaded_file($_FILES['image']['tmp_name'], $dir . $data['image']);
         }
 
         $bagModel->update($id, $data);
@@ -101,7 +105,7 @@ class MysteryBagController extends Controller
         $bag = $bagModel->findById($bagId);
         if (!$bag) { setFlash('danger', 'Không tìm thấy túi'); redirect('/admin/mystery-bag'); }
 
-        $items = $bagModel->getItems($bagId);
+        $items = $bagModel->getItemsWithPercentages($bagId);
 
         $this->view('admin.mystery_bag.items', [
             'pageTitle' => 'Tài khoản - ' . $bag['name'],
@@ -128,13 +132,14 @@ class MysteryBagController extends Controller
         if (!verifyCsrf()) { setFlash('danger', 'Phiên hết hạn'); redirect('/admin/mystery-bag/' . $bagId . '/items'); }
 
         $db = getDatabaseConnection();
-        $stmt = $db->prepare("INSERT INTO mystery_bag_items (bag_id, name, value, content, probability) VALUES (?, ?, ?, ?, ?)");
+        $stmt = $db->prepare("INSERT INTO mystery_bag_items (bag_id, name, value, content, probability, status) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $bagId,
             $_POST['name'],
             $_POST['value'] ?? 0,
             $_POST['content'] ?? '',
-            $_POST['probability'] ?? 10
+            $_POST['probability'] ?? 10,
+            isset($_POST['status']) ? 1 : 1
         ]);
 
         setFlash('success', 'Thêm tài khoản thành công');
@@ -165,18 +170,18 @@ class MysteryBagController extends Controller
 
         $db = getDatabaseConnection();
         
-        // Get bag_id first
         $stmt = $db->prepare("SELECT bag_id FROM mystery_bag_items WHERE id = ?");
         $stmt->execute([$itemId]);
         $item = $stmt->fetch();
         if (!$item) { setFlash('danger', 'Không tìm thấy'); redirect('/admin/mystery-bag'); }
 
-        $stmt = $db->prepare("UPDATE mystery_bag_items SET name = ?, value = ?, content = ?, probability = ? WHERE id = ?");
+        $stmt = $db->prepare("UPDATE mystery_bag_items SET name = ?, value = ?, content = ?, probability = ?, status = ? WHERE id = ?");
         $stmt->execute([
             $_POST['name'],
             $_POST['value'] ?? 0,
             $_POST['content'] ?? '',
             $_POST['probability'] ?? 10,
+            isset($_POST['status']) ? 1 : 0,
             $itemId
         ]);
 
@@ -197,6 +202,59 @@ class MysteryBagController extends Controller
         $stmt->execute([$itemId]);
 
         setFlash('success', 'Đã xoá tài khoản');
+        redirect('/admin/mystery-bag/' . $bagId . '/items');
+    }
+
+    // ===== PROBABILITY MANAGEMENT =====
+
+    public function updateProbabilities($bagId)
+    {
+        if (!verifyCsrf()) { setFlash('danger', 'Phiên hết hạn'); redirect('/admin/mystery-bag/' . $bagId . '/items'); }
+
+        $bagModel = $this->model('MysteryBag');
+        $bag = $bagModel->findById($bagId);
+        if (!$bag) { setFlash('danger', 'Không tìm thấy túi'); redirect('/admin/mystery-bag'); }
+
+        $probabilities = $_POST['probability'] ?? [];
+        if (!empty($probabilities)) {
+            $bagModel->bulkUpdateProbabilities($bagId, $probabilities);
+        }
+
+        setFlash('success', 'Cập nhật xác suất thành công');
+        redirect('/admin/mystery-bag/' . $bagId . '/items');
+    }
+
+    public function bulkAddItems($bagId)
+    {
+        if (!verifyCsrf()) { setFlash('danger', 'Phiên hết hạn'); redirect('/admin/mystery-bag/' . $bagId . '/items'); }
+
+        $bulkData = trim($_POST['bulk_items'] ?? '');
+        if (empty($bulkData)) {
+            setFlash('danger', 'Không có dữ liệu');
+            redirect('/admin/mystery-bag/' . $bagId . '/items');
+        }
+
+        $db = getDatabaseConnection();
+        $lines = explode("\n", $bulkData);
+        $count = 0;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            // Format: name|value|content|probability
+            $parts = explode('|', $line);
+            $name = trim($parts[0] ?? 'Item mới');
+            $value = intval($parts[1] ?? 0);
+            $content = trim($parts[2] ?? '');
+            $probability = intval($parts[3] ?? 10);
+
+            $stmt = $db->prepare("INSERT INTO mystery_bag_items (bag_id, name, value, content, probability, status) VALUES (?, ?, ?, ?, ?, 1)");
+            $stmt->execute([$bagId, $name, $value, $content, $probability]);
+            $count++;
+        }
+
+        setFlash('success', "Đã thêm {$count} tài khoản");
         redirect('/admin/mystery-bag/' . $bagId . '/items');
     }
 }

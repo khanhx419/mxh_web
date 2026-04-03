@@ -16,6 +16,19 @@
     .chess-score-banner .score-label { font-size: 0.85rem; color: var(--text-secondary); }
     .chess-score-banner .score-value { font-size: 1.5rem; font-weight: 800; color: var(--accent-primary); }
 
+    /* User Stats Grid */
+    .chess-user-stats {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+        max-width: 600px; margin: 0 auto 24px;
+    }
+    .chess-stat-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 10px; padding: 12px; text-align: center;
+    }
+    .chess-stat-card .stat-diff { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; }
+    .chess-stat-card .stat-wins { font-size: 1.2rem; font-weight: 800; color: var(--accent-primary); }
+    .chess-stat-card .stat-pts { font-size: 0.75rem; color: var(--text-muted); }
+
     .chess-layout {
         display: grid; grid-template-columns: minmax(280px, 560px) 1fr;
         gap: 24px; align-items: start;
@@ -105,8 +118,46 @@
         ) !important;
     }
 
+    /* Mini Leaderboard */
+    .chess-mini-lb {
+        margin-top: 30px; padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+    }
+    .chess-mini-lb h3 {
+        font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; text-align: center;
+    }
+    .chess-mini-lb h3 i { color: var(--accent-warning); margin-right: 6px; }
+    .chess-lb-tabs {
+        display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .chess-lb-tab {
+        padding: 6px 14px; border: 1px solid var(--border-color); border-radius: 8px;
+        background: var(--bg-input); color: var(--text-secondary); font-size: 0.78rem;
+        font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .chess-lb-tab:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .chess-lb-tab.active {
+        background: rgba(99,102,241,0.12); color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+    .chess-lb-panel { display: none; }
+    .chess-lb-panel.active { display: block; }
+    .chess-lb-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 8px 12px; border-radius: 8px; margin-bottom: 4px;
+        background: var(--bg-input);
+    }
+    .chess-lb-row .rank { font-weight: 800; color: var(--text-muted); width: 24px; text-align: center; }
+    .chess-lb-row .rank.top-1 { color: #fbbf24; }
+    .chess-lb-row .rank.top-2 { color: #94a3b8; }
+    .chess-lb-row .rank.top-3 { color: #cd7f32; }
+    .chess-lb-row .name { flex: 1; font-weight: 600; font-size: 0.88rem; }
+    .chess-lb-row .wins-info { font-size: 0.78rem; color: var(--accent-info); font-weight: 700; }
+    .chess-lb-row .pts-info { font-size: 0.78rem; color: var(--accent-warning); font-weight: 700; margin-left: 8px; }
+
     @media (max-width: 860px) {
         .chess-layout { grid-template-columns: 1fr; }
+        .chess-user-stats { grid-template-columns: repeat(2, 1fr); }
     }
 </style>
 
@@ -122,6 +173,23 @@
             <div class="score-label">Tổng điểm cờ vua</div>
             <div class="score-value" id="total-score"><?= $chessScore ?? 0 ?></div>
         </div>
+    </div>
+
+    <!-- User Stats Per Difficulty -->
+    <div class="chess-user-stats">
+        <?php
+        $diffLabels = ['easy' => '🟢 Easy', 'medium' => '🟡 Medium', 'hard' => '🟠 Hard', 'hell' => '🔴 Hell'];
+        foreach ($diffLabels as $dk => $dl):
+            $s = $userStats[$dk] ?? 0;
+            $wins = is_array($s) ? ($s['wins'] ?? 0) : 0;
+            $pts = is_array($s) ? ($s['points'] ?? 0) : 0;
+        ?>
+        <div class="chess-stat-card">
+            <div class="stat-diff"><?= $dl ?></div>
+            <div class="stat-wins"><?= $wins ?></div>
+            <div class="stat-pts"><?= $pts ?> điểm</div>
+        </div>
+        <?php endforeach; ?>
     </div>
 
     <!-- Loading -->
@@ -169,6 +237,38 @@
         </div>
     </div>
 
+    <!-- Mini Leaderboard -->
+    <div class="chess-mini-lb">
+        <h3><i class="fas fa-medal"></i> Bảng Xếp Hạng Cờ Vua</h3>
+        <div class="chess-lb-tabs">
+            <button class="chess-lb-tab active" data-chess-tab="clb-easy">🟢 Easy</button>
+            <button class="chess-lb-tab" data-chess-tab="clb-medium">🟡 Medium</button>
+            <button class="chess-lb-tab" data-chess-tab="clb-hard">🟠 Hard</button>
+            <button class="chess-lb-tab" data-chess-tab="clb-hell">🔴 Hell</button>
+        </div>
+        <?php foreach (['easy', 'medium', 'hard', 'hell'] as $idx => $diff):
+            $lb = $miniLeaderboard[$diff] ?? [];
+        ?>
+        <div class="chess-lb-panel <?= $idx === 0 ? 'active' : '' ?>" id="clb-<?= $diff ?>">
+            <?php if (empty($lb)): ?>
+                <div style="text-align:center;padding:20px;color:var(--text-muted);">
+                    <i class="fas fa-chess-pawn" style="font-size:1.5rem;"></i>
+                    <p style="margin-top:8px;">Chưa có ai thắng ở mức này</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($lb as $ri => $row): ?>
+                <div class="chess-lb-row">
+                    <span class="rank <?= $ri < 3 ? 'top-'.($ri+1) : '' ?>"><?= $ri + 1 ?></span>
+                    <span class="name"><i class="fas fa-user-circle" style="color:var(--text-muted);margin-right:4px;"></i><?= e($row['username']) ?></span>
+                    <span class="wins-info"><?= $row['wins'] ?> trận</span>
+                    <span class="pts-info">⭐ <?= $row['total_points'] ?></span>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
     <!-- Win toast -->
     <div class="win-toast" id="win-toast"></div>
 </div>
@@ -191,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let stockfish = null, board = null, game = new Chess();
     let gameActive = false, aiThinking = false;
-    let selectedSquare = null; // For two-click move (chess.com style)
+    let selectedSquare = null;
     const $status = $('#status'), $body = $('#moves-body');
 
     // Load Stockfish via blob worker (bypass CORS)
@@ -229,11 +329,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         $(window).resize(() => board && board.resize());
 
-        // Two-click move handler (chess.com style)
+        // Two-click move handler
         $('#board').on('click', '.square-55d63', function () {
             if (!gameActive || game.game_over() || aiThinking) return;
 
-            // Determine the square from the element's class
             const classes = $(this).attr('class').split(/\s+/);
             let clickedSquare = null;
             for (let i = 0; i < classes.length; i++) {
@@ -244,7 +343,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const clickedPiece = game.get(clickedSquare);
 
-            // Case 1: No piece selected yet — select this piece if it's ours
             if (!selectedSquare) {
                 if (clickedPiece && clickedPiece.color === 'w') {
                     selectedSquare = clickedSquare;
@@ -253,22 +351,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Case 2: A piece is already selected
-            // If clicking the same square, deselect
             if (selectedSquare === clickedSquare) {
                 selectedSquare = null;
                 clearHighlights();
                 return;
             }
 
-            // If clicking another own piece, switch selection
             if (clickedPiece && clickedPiece.color === 'w') {
                 selectedSquare = clickedSquare;
                 highlightMoves(clickedSquare);
                 return;
             }
 
-            // Try to move from selectedSquare to clickedSquare
             const move = game.move({
                 from: selectedSquare,
                 to: clickedSquare,
@@ -282,24 +376,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 refreshUI();
                 window.setTimeout(aiMove, 200);
             } else {
-                // Invalid move — deselect
                 selectedSquare = null;
                 clearHighlights();
             }
         });
     }
 
-    // --- Valid Move Highlighting ---
     function highlightMoves(square) {
         clearHighlights();
-
-        // Highlight the selected piece's square
         $('#board .square-' + square).addClass('highlight-selected');
-
-        // Get legal moves for this piece
         const moves = game.moves({ square: square, verbose: true });
         if (moves.length === 0) return;
-
         moves.forEach(function (move) {
             const $sq = $('#board .square-' + move.to);
             if (move.captured || move.flags.indexOf('e') !== -1) {
@@ -330,11 +417,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
-    // --- End Highlighting ---
 
     function onDragStart(src, piece) {
         if (!gameActive || game.game_over() || aiThinking || piece.search(/^b/) !== -1) return false;
-        selectedSquare = null; // Clear click-selection when dragging
+        selectedSquare = null;
         highlightMoves(src);
     }
     function onDrop(src, tgt) {
@@ -362,7 +448,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function refreshUI() {
-        // History
         const hist = game.history();
         $body.empty();
         for (let i = 0; i < hist.length; i += 2) {
@@ -371,13 +456,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const log = document.getElementById('move-log');
         log.scrollTop = log.scrollHeight;
 
-        // Status
         const color = game.turn() === 'w' ? 'Trắng' : 'Đen';
         if (game.in_checkmate()) {
             const winner = game.turn() === 'w' ? 'Đen (AI)' : 'Trắng (Bạn)';
             $status.html('♚ Chiếu hết! ' + winner + ' thắng!');
             gameActive = false;
-            if (game.turn() === 'b') recordWin(); // Player (white) wins
+            if (game.turn() === 'b') recordWin();
         } else if (game.in_draw() || game.in_stalemate() || game.in_threefold_repetition()) {
             $status.html('🤝 Hòa!');
             gameActive = false;
@@ -386,7 +470,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (game.in_check()) s += ' — <strong style="color:var(--accent-danger);">Chiếu!</strong>';
             $status.html(s);
         }
-        // Highlight king if in check
         clearHighlights();
         highlightKingInCheck();
     }
@@ -414,7 +497,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     $('#btn-undo').click(function () {
         if (!gameActive || aiThinking) return;
-        game.undo(); game.undo(); // undo AI + player
+        game.undo(); game.undo();
         board.position(game.fen());
         refreshUI();
     });
@@ -423,6 +506,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!gameActive) return;
         gameActive = false;
         $status.html('<span style="color:var(--accent-danger);">Bạn đã chịu thua.</span>');
+    });
+
+    // Mini leaderboard tabs
+    document.querySelectorAll('.chess-lb-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.chess-lb-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.chess-lb-panel').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            const panel = document.getElementById(this.dataset.chessTab);
+            if (panel) panel.classList.add('active');
+        });
     });
 });
 </script>

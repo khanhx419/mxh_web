@@ -48,4 +48,16 @@ class User extends Model
         $user = $this->findById($userId);
         return $user ? $user['balance'] : 0;
     }
+
+    /**
+     * Increment a specific field
+     */
+    public function incrementField($userId, $field, $amount)
+    {
+        $allowed = ['balance', 'total_deposit', 'balance_1', 'chess_score', 'green_points_total'];
+        if (!in_array($field, $allowed)) return false;
+
+        $stmt = $this->db->prepare("UPDATE `users` SET `{$field}` = `{$field}` + ? WHERE id = ?");
+        return $stmt->execute([$amount, $userId]);
+    }
 }

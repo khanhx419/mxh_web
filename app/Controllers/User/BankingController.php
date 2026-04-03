@@ -245,4 +245,76 @@ class BankingController extends Controller
             'invoices' => $invoices
         ]);
     }
+
+    /**
+     * Xử lý nạp thẻ cào
+     */
+    public function cardDeposit()
+    {
+        header('Content-Type: application/json');
+
+        if (!verifyCsrf()) {
+            echo json_encode(['status' => 'error', 'message' => 'Phiên làm việc hết hạn']);
+            return;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $type = strtoupper(trim($_POST['card_type'] ?? ''));
+        $serial = trim($_POST['card_serial'] ?? '');
+        $code = trim($_POST['card_code'] ?? '');
+        $amount = intval($_POST['card_amount'] ?? 0);
+
+        // Validate
+        $validTypes = ['VIETTEL', 'MOBIFONE', 'VINAPHONE', 'VIETNAMOBILE', 'ZING', 'GARENA'];
+        if (!in_array($type, $validTypes)) {
+            echo json_encode(['status' => 'error', 'message' => 'Loại thẻ không hợp lệ']);
+            return;
+        }
+
+        if (empty($serial) || strlen($serial) < 6) {
+            echo json_encode(['status' => 'error', 'message' => 'Số serial không hợp lệ']);
+            return;
+        }
+
+        if (empty($code) || strlen($code) < 6) {
+            echo json_encode(['status' => 'error', 'message' => 'Mã thẻ không hợp lệ']);
+            return;
+        }
+
+        $validAmounts = [10000, 20000, 30000, 50000, 100000, 200000, 300000, 500000, 1000000];
+        if (!in_array($amount, $validAmounts)) {
+            echo json_encode(['status' => 'error', 'message' => 'Mệnh giá không hợp lệ']);
+            return;
+        }
+
+        // Check pending cards limit (max 5)
+        $db = getDatabaseConnection();
+        try {
+            $stmt = $db->prepare("SELECT COUNT(*) as cnt FROM card_lists WHERE user_id = ? AND status = 'Processing'");
+            $stmt->execute([$userId]);
+            $row = $stmt->fetch();
+            if (intval($row['cnt'] ?? 0) >= 5) {
+                echo json_encode(['status' => 'error', 'message' => 'Bạn có quá nhiều thẻ đang chờ xử lý (tối đa 5).']);
+                return;
+            }
+        } catch (Exception $e) {
+            // Table might not exist
+        }
+
+        // Save card to card_lists table
+        try {
+            require_once BASE_PATH . '/app/Models/CardList.php';
+            $cardModel = new CardList();
+            $cardModel->createCard($userId, $type, $serial, $code, $amount);
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Gửi thẻ thành công! Hệ thống đang xử lý, vui lòng chờ 1-3 phút.',
+                'redirect' => url('/banking')
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => 'Lỗi hệ thống: ' . $e->getMessage()]);
+        }
+    }
 }
+

@@ -15,6 +15,28 @@ class LuckyWheelPrize extends Model
     }
 
     /**
+     * Tổng xác suất
+     */
+    public function getTotalProbability()
+    {
+        $prizes = $this->findAll('id ASC');
+        return array_sum(array_column($prizes, 'probability'));
+    }
+
+    /**
+     * Lấy prizes với phần trăm đã tính
+     */
+    public function getPrizesWithPercentages()
+    {
+        $prizes = $this->findAll('id ASC');
+        $total = array_sum(array_column($prizes, 'probability'));
+        foreach ($prizes as &$p) {
+            $p['percentage'] = $total > 0 ? round($p['probability'] / $total * 100, 1) : 0;
+        }
+        return $prizes;
+    }
+
+    /**
      * Thuật toán quay thưởng theo tỷ lệ phần trăm (probability)
      */
     public function spin()

@@ -15,19 +15,26 @@
         <div class="form-group">
             <label>Giá trị (VNĐ)</label>
             <input type="number" name="value" class="form-control" value="<?= e($item['value'] ?? '0') ?>" step="any">
-            <small class="form-hint"><i class="fas fa-info-circle"></i> Giá trị ước tính của tài khoản này. Dùng để hiển thị cho user.</small>
+            <small style="display:block;margin-top:4px;font-size:.78rem;color:var(--text-muted)"><i class="fas fa-info-circle" style="margin-right:4px;color:var(--accent-warning)"></i> Giá trị ước tính của tài khoản này. Dùng để hiển thị cho user.</small>
         </div>
 
         <div class="form-group">
             <label>Nội dung / Thông tin tài khoản</label>
             <textarea name="content" class="form-control" rows="4" placeholder="VD: Tên đăng nhập: abc123&#10;Mật khẩu: ****&#10;Server: Việt Nam"><?= e($item['content'] ?? '') ?></textarea>
-            <small class="form-hint"><i class="fas fa-info-circle"></i> Thông tin chi tiết sẽ hiện cho user khi trúng item này. Có thể là tài khoản, mật khẩu, link...</small>
+            <small style="display:block;margin-top:4px;font-size:.78rem;color:var(--text-muted)"><i class="fas fa-info-circle" style="margin-right:4px;color:var(--accent-warning)"></i> Thông tin chi tiết sẽ hiện cho user khi trúng item này.</small>
         </div>
 
         <div class="form-group">
             <label>Xác suất (trọng số)</label>
-            <input type="number" name="probability" class="form-control" value="<?= e($item['probability'] ?? '10') ?>" min="1">
-            <small class="form-hint"><i class="fas fa-lightbulb"></i> Trọng số xác suất. VD: item A=60, item B=30, item C=10 → 60%, 30%, 10%</small>
+            <input type="number" name="probability" class="form-control" value="<?= e($item['probability'] ?? '10') ?>" min="0">
+            <small style="display:block;margin-top:4px;font-size:.78rem;color:var(--text-muted)"><i class="fas fa-lightbulb" style="margin-right:4px;color:var(--accent-warning)"></i> Trọng số xác suất. VD: item A=60, item B=30, item C=10 → 60%, 30%, 10%</small>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="status" <?= ($item['status'] ?? 1) ? 'checked' : '' ?>> Kích hoạt (Cho phép rơi item này)
+            </label>
+            <small style="display:block;margin-top:4px;font-size:.78rem;color:var(--text-muted)"><i class="fas fa-info-circle" style="margin-right:4px;color:var(--accent-warning)"></i> Tắt để tạm ẩn item khỏi pool xác suất mà không cần xoá.</small>
         </div>
 
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?= $item ? 'Cập nhật' : 'Thêm mới' ?></button>
@@ -36,6 +43,4 @@
 
 <style>
 .form-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:16px;padding:24px}
-.form-hint{display:block;margin-top:4px;font-size:.78rem;color:var(--text-muted)}
-.form-hint i{margin-right:4px;color:var(--accent-warning)}
 </style>

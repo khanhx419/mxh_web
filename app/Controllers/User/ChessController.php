@@ -16,8 +16,6 @@ class ChessController extends Controller
     public function index()
     {
         $userId = $_SESSION['user_id'];
-
-        // Đảm bảo user có cột chess_score
         $this->ensureChessScoreColumn();
 
         $db = getDatabaseConnection();
@@ -26,16 +24,49 @@ class ChessController extends Controller
         $row = $stmt->fetch();
         $chessScore = intval($row['chess_score'] ?? 0);
 
+        // Lấy stats per difficulty
+        $userStats = ['easy' => 0, 'medium' => 0, 'hard' => 0, 'hell' => 0];
+        try {
+            $stmt = $db->prepare("SELECT difficulty, COUNT(*) as wins, SUM(points) as total_points FROM chess_wins WHERE user_id = ? GROUP BY difficulty");
+            $stmt->execute([$userId]);
+            $stats = $stmt->fetchAll();
+            foreach ($stats as $s) {
+                $userStats[$s['difficulty']] = [
+                    'wins' => intval($s['wins']),
+                    'points' => intval($s['total_points'])
+                ];
+            }
+        } catch (Exception $e) {}
+
+        // Mini leaderboard 
+        $miniLeaderboard = [];
+        try {
+            foreach (['easy', 'medium', 'hard', 'hell'] as $diff) {
+                $stmt = $db->prepare("
+                    SELECT u.username, COUNT(cw.id) as wins, SUM(cw.points) as total_points
+                    FROM chess_wins cw
+                    JOIN users u ON cw.user_id = u.id
+                    WHERE cw.difficulty = ?
+                    GROUP BY cw.user_id
+                    ORDER BY wins DESC
+                    LIMIT 5
+                ");
+                $stmt->execute([$diff]);
+                $miniLeaderboard[$diff] = $stmt->fetchAll();
+            }
+        } catch (Exception $e) {}
+
         $this->view('user.chess', [
             'pageTitle' => 'Cờ Vua AI — Stockfish',
             'chessScore' => $chessScore,
+            'userStats' => $userStats,
+            'miniLeaderboard' => $miniLeaderboard,
             'csrfToken' => $_SESSION['csrf_token'] ?? ''
         ]);
     }
 
     /**
-     * API ghi nhận thắng cờ — cộng điểm
-     * POST /chess/record-win
+     * API ghi nhận thắng cờ — cộng điểm + log vào chess_wins
      */
     public function recordWin()
     {
@@ -66,8 +97,18 @@ class ChessController extends Controller
         $this->ensureChessScoreColumn();
 
         $db = getDatabaseConnection();
+
+        // Update total score
         $stmt = $db->prepare("UPDATE users SET chess_score = chess_score + ? WHERE id = ?");
         $stmt->execute([$points, $userId]);
+
+        // Log win to chess_wins table
+        try {
+            $stmt = $db->prepare("INSERT INTO chess_wins (user_id, difficulty, points) VALUES (?, ?, ?)");
+            $stmt->execute([$userId, $difficulty, $points]);
+        } catch (Exception $e) {
+            // Table might not exist yet
+        }
 
         $stmt2 = $db->prepare("SELECT chess_score FROM users WHERE id = ?");
         $stmt2->execute([$userId]);

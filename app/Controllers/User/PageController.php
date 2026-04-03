@@ -88,11 +88,32 @@ class PageController extends Controller
             // Table may not exist yet
         }
 
+        // Top Cờ Vua (per difficulty)
+        $topChess = ['easy' => [], 'medium' => [], 'hard' => [], 'hell' => []];
+        try {
+            foreach (['easy', 'medium', 'hard', 'hell'] as $diff) {
+                $stmtC = $db->prepare("
+                    SELECT u.username, COUNT(cw.id) as wins, SUM(cw.points) as total_points
+                    FROM chess_wins cw
+                    JOIN users u ON cw.user_id = u.id
+                    WHERE cw.difficulty = ?
+                    GROUP BY cw.user_id
+                    ORDER BY wins DESC
+                    LIMIT 10
+                ");
+                $stmtC->execute([$diff]);
+                $topChess[$diff] = $stmtC->fetchAll();
+            }
+        } catch (Exception $e) {
+            // Table may not exist yet
+        }
+
         $this->view('user.leaderboard', [
             'pageTitle' => 'Bảng Xếp Hạng',
             'topDeposit' => $topDeposit,
             'topSpending' => $topSpending,
-            'topPoints' => $topPoints
+            'topPoints' => $topPoints,
+            'topChess' => $topChess
         ]);
     }
 

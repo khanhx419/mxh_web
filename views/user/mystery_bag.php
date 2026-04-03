@@ -11,7 +11,7 @@
         <div class="mb-hero-stats">
             <div class="mb-stat-item"><i class="fas fa-box-open"></i><span><?= count($bags) ?></span><small>Loại túi</small></div>
             <div class="mb-stat-divider"></div>
-            <div class="mb-stat-item"><i class="fas fa-ticket-alt"></i><span id="free-spins-count"><?= $checkin['free_spins'] ?></span><small>Lượt free</small></div>
+            <div class="mb-stat-item"><i class="fas fa-wallet"></i><span class="user-balance"><?= isset($_SESSION['user_balance']) ? formatMoney($_SESSION['user_balance']) : '0đ' ?></span><small>Số dư</small></div>
             <div class="mb-stat-divider"></div>
             <div class="mb-stat-item"><i class="fas fa-trophy"></i><span>100%</span><small>Có thưởng</small></div>
         </div>
@@ -62,7 +62,7 @@
 </div>
 
 
-<!-- Purchase Modal -->
+<!-- Purchase Modal (NO FREE SPIN) -->
 <div class="mb-modal-overlay" id="purchaseModal">
 <div class="mb-modal">
     <button class="mb-modal-close" onclick="closePurchaseModal()"><i class="fas fa-times"></i></button>
@@ -73,15 +73,6 @@
     <div class="mb-modal-body">
         <div class="mb-modal-row"><span>Giá tiền</span><strong id="modal-price" class="mb-text-accent">0đ</strong></div>
         <div class="mb-modal-row"><span>Số dư hiện tại</span><strong class="mb-text-info user-balance"><?= isset($_SESSION['user_balance']) ? formatMoney($_SESSION['user_balance']) : '0đ' ?></strong></div>
-        <div class="mb-modal-row"><span>Lượt quay free</span><strong class="mb-text-success" id="modal-free-spins"><?= $checkin['free_spins'] ?></strong></div>
-        <div class="mb-modal-divider"></div>
-        <div class="mb-modal-row">
-            <span>Dùng lượt free?</span>
-            <label class="mb-toggle-switch">
-                <input type="checkbox" id="modal-use-free" onchange="updatePaymentInfo()">
-                <span class="mb-toggle-slider"></span>
-            </label>
-        </div>
         <div class="mb-modal-divider"></div>
         <div class="mb-modal-row mb-modal-total"><span>Tổng thanh toán</span><strong id="modal-total" class="mb-text-warning">0đ</strong></div>
     </div>
@@ -117,5 +108,8 @@
 </div>
 </div>
 
-<?php require_once BASE_PATH . '/views/user/mystery_bag_styles.php'; ?>
-<?php require_once BASE_PATH . '/views/user/mystery_bag_scripts.php'; ?>
+<div id="mb-config" 
+     data-csrf="<?= e($_SESSION['csrf_token'] ?? '') ?>" 
+     data-checkin-url="<?= url('/mystery-bag/checkin') ?>" 
+     data-open-url="<?= url('/mystery-bag/open/') ?>" 
+     style="display:none;"></div>

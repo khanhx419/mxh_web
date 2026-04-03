@@ -24,23 +24,19 @@ class Invoice extends Model
 
     /**
      * Tạo hóa đơn nạp tiền mới
-     * trans_id sẽ theo format PREFIX + USER_ID (VD: NAP59)
      */
     public function createInvoice($userId, $amount, $method)
     {
-        // Tạo mã nội dung CK: PREFIX + USER_ID
         $settingModel = new Setting();
         $prefix = strtoupper($settingModel->get('bank_prefix', 'NAP'));
         $transId = $prefix . $userId;
 
-        // Kiểm tra xem đã có invoice pending nào với cùng trans_id chưa
         $existingPending = $this->findOneWhere([
             'trans_id' => $transId,
             'status' => 0
         ]);
 
         if ($existingPending) {
-            // Nếu đã có pending thì cập nhật amount thay vì tạo mới
             $this->update($existingPending['id'], [
                 'amount' => $amount,
                 'pay' => $amount,
@@ -68,6 +64,18 @@ class Invoice extends Model
     public function findByTransId($transId)
     {
         return $this->findOneWhere(['trans_id' => $transId]);
+    }
+
+    /**
+     * Tìm invoice theo request_id (FPayment, PerfectMoney)
+     */
+    public function findByRequestId($requestId, $type = null)
+    {
+        $conditions = ['request_id' => $requestId, 'status' => 0];
+        if ($type) {
+            $conditions['type'] = $type;
+        }
+        return $this->findOneWhere($conditions);
     }
 
     /**

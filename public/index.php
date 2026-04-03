@@ -65,6 +65,7 @@ try {
     $router->post('/banking/create', 'User/BankingController@createInvoice');
     $router->post('/banking/check-status', 'User/BankingController@checkStatus');
     $router->get('/banking/history', 'User/BankingController@history');
+    $router->post('/banking/card-deposit', 'User/BankingController@cardDeposit');
 
     // --- Page & Feature Routes ---
     $router->get('/search', 'User/PageController@search');
@@ -157,6 +158,8 @@ try {
     // Admin - Settings
     $router->get('/admin/settings', 'Admin/SettingsController@index');
     $router->post('/admin/settings/update', 'Admin/SettingsController@update');
+    $router->get('/admin/settings/deposit', 'Admin/SettingsController@deposit');
+    $router->post('/admin/settings/deposit/update', 'Admin/SettingsController@updateDeposit');
 
     // Dispatch
     $router->dispatch();

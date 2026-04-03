@@ -171,7 +171,70 @@
             </div>
         </div>
     <?php endif; ?>
+
+    <!-- Card Deposit Section -->
+    <div class="card mt-5">
+        <div class="card-body">
+            <h3 class="card-title mb-4"><i class="fas fa-sim-card" style="color: var(--accent-info);"></i> Nạp Thẻ Cào</h3>
+            <p class="text-secondary mb-3">Nạp tiền bằng thẻ điện thoại / thẻ game. Phí chiết khấu áp dụng theo từng nhà mạng.</p>
+
+            <form id="card-deposit-form" action="<?= url('/banking/card-deposit') ?>" method="POST">
+                <?= csrfField() ?>
+
+                <div class="form-group">
+                    <label>Loại thẻ</label>
+                    <select name="card_type" class="form-control" required>
+                        <option value="">-- Chọn nhà mạng --</option>
+                        <option value="VIETTEL">Viettel</option>
+                        <option value="MOBIFONE">Mobifone</option>
+                        <option value="VINAPHONE">Vinaphone</option>
+                        <option value="VIETNAMOBILE">Vietnamobile</option>
+                        <option value="ZING">Zing</option>
+                        <option value="GARENA">Garena</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Mệnh giá</label>
+                    <select name="card_amount" class="form-control" required>
+                        <option value="">-- Chọn mệnh giá --</option>
+                        <option value="10000">10,000đ</option>
+                        <option value="20000">20,000đ</option>
+                        <option value="30000">30,000đ</option>
+                        <option value="50000">50,000đ</option>
+                        <option value="100000">100,000đ</option>
+                        <option value="200000">200,000đ</option>
+                        <option value="300000">300,000đ</option>
+                        <option value="500000">500,000đ</option>
+                        <option value="1000000">1,000,000đ</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Số Serial</label>
+                    <input type="text" name="card_serial" class="form-control" placeholder="Nhập số serial thẻ" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Mã thẻ</label>
+                    <input type="text" name="card_code" class="form-control" placeholder="Nhập mã thẻ cào" required>
+                </div>
+
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle"></i>
+                    Thẻ sẽ được xử lý tự động trong 1-3 phút. Nếu khai sai mệnh giá, thẻ vẫn nạp theo giá trị thực tế.
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block p-3">
+                    <i class="fas fa-paper-plane"></i> GỬI THẺ NẠP
+                </button>
+            </form>
+
+            <div id="card-ajax-message" class="mt-3"></div>
+        </div>
+    </div>
 </div>
+
 
 <script>
     // Form tạo hoá đơn
@@ -242,6 +305,35 @@
 
                 btn.innerHTML = '<i class="fas fa-search-dollar"></i> KIỂM TRA LẠI';
                 btn.disabled = false;
+            });
+    });
+
+    // Form nạp thẻ cào
+    document.getElementById('card-deposit-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const form = this;
+        const btn = form.querySelector('button[type="submit"]');
+        const msgDiv = document.getElementById('card-ajax-message');
+
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG GỬI THẺ...';
+        btn.disabled = true;
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(response => response.json())
+            .catch(() => ({ status: 'error', message: 'Lỗi mạng hoặc server không phản hồi' }))
+            .then(data => {
+                msgDiv.innerHTML = `<div class="alert alert-${data.status === 'success' ? 'success' : 'danger'}">${data.message}</div>`;
+                if (data.status === 'success' && data.redirect) {
+                    setTimeout(() => { window.location.href = data.redirect; }, 1500);
+                } else {
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> GỬI THẺ NẠP';
+                    btn.disabled = false;
+                }
             });
     });
 </script>

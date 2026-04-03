@@ -89,4 +89,56 @@ class SettingsController extends Controller
         setFlash('success', 'Cập nhật cài đặt thành công');
         redirect('/admin/settings');
     }
+
+    /**
+     * Trang cấu hình nạp tiền (multi-bank, card, discount)
+     */
+    public function deposit()
+    {
+        $db = getDatabaseConnection();
+        $rows = $db->query("SELECT * FROM settings")->fetchAll();
+        $settings = [];
+        foreach ($rows as $r) {
+            $settings[$r['name']] = $r['value'];
+        }
+
+        $this->view('admin.settings.deposit', [
+            'pageTitle' => 'Cấu Hình Nạp Tiền',
+            'settings' => $settings
+        ], 'admin');
+    }
+
+    /**
+     * Lưu cấu hình nạp tiền
+     */
+    public function updateDeposit()
+    {
+        if (!verifyCsrf()) {
+            setFlash('danger', 'Phiên hết hạn');
+            redirect('/admin/settings/deposit');
+        }
+
+        $db = getDatabaseConnection();
+        $fields = [
+            'deposit_discount',
+            'card_api_url', 'card_partner_id', 'card_partner_key',
+            'card_fees_viettel', 'card_fees_mobifone', 'card_fees_vinaphone',
+            'bank_vcb_api_token', 'bank_vcb_account_number', 'bank_vcb_account_password',
+            'bank_mb_api_token', 'bank_mb_account_number', 'bank_mb_account_password',
+            'bank_acb_api_token', 'bank_acb_account_number', 'bank_acb_account_password',
+            'bank_momo_api_token',
+            'bank_thesieure_api_token'
+        ];
+
+        foreach ($fields as $f) {
+            if (isset($_POST[$f])) {
+                $stmt = $db->prepare("INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?");
+                $stmt->execute([$f, $_POST[$f], $_POST[$f]]);
+            }
+        }
+
+        setFlash('success', 'Cập nhật cấu hình nạp tiền thành công');
+        redirect('/admin/settings/deposit');
+    }
 }
+

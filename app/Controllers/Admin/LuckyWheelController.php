@@ -8,16 +8,45 @@ class LuckyWheelController extends Controller
 
     public function index()
     {
+        $prizeModel = $this->model('LuckyWheelPrize');
+        $prizes = $prizeModel->getPrizesWithPercentages();
         $db = getDatabaseConnection();
-        $prizes = $db->query("SELECT * FROM lucky_wheel_prizes ORDER BY id")->fetchAll();
         $settings = $db->query("SELECT * FROM settings WHERE name = 'wheel_spin_cost'")->fetch();
         $spinCost = $settings['value'] ?? 10000;
 
         $this->view('admin.lucky_wheel.index', [
             'pageTitle' => 'Quản lý Vòng Quay',
             'prizes' => $prizes,
-            'spinCost' => $spinCost
+            'spinCost' => $spinCost,
+            'totalProbability' => $prizeModel->getTotalProbability()
         ], 'admin');
+    }
+
+    public function create()
+    {
+        $this->view('admin.lucky_wheel.form', [
+            'pageTitle' => 'Thêm Giải Thưởng',
+            'prize' => null
+        ], 'admin');
+    }
+
+    public function store()
+    {
+        if (!verifyCsrf()) { setFlash('danger', 'Phiên hết hạn'); redirect('/admin/lucky-wheel'); }
+        $db = getDatabaseConnection();
+
+        $stmt = $db->prepare("INSERT INTO lucky_wheel_prizes (name, type, value, probability, color, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $_POST['name'] ?? 'Giải mới',
+            $_POST['type'] ?? 'nothing',
+            $_POST['value'] ?? 0,
+            $_POST['probability'] ?? 10,
+            $_POST['color'] ?? '#6c63ff',
+            isset($_POST['status']) ? 1 : 0
+        ]);
+
+        setFlash('success', 'Thêm giải thưởng thành công');
+        redirect('/admin/lucky-wheel');
     }
 
     public function update()
@@ -48,6 +77,14 @@ class LuckyWheelController extends Controller
         }
 
         setFlash('success', 'Cập nhật vòng quay thành công');
+        redirect('/admin/lucky-wheel');
+    }
+
+    public function delete($id)
+    {
+        $db = getDatabaseConnection();
+        $db->prepare("DELETE FROM lucky_wheel_prizes WHERE id = ?")->execute([$id]);
+        setFlash('success', 'Đã xoá giải thưởng');
         redirect('/admin/lucky-wheel');
     }
 }
