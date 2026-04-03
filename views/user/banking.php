@@ -71,7 +71,7 @@
                 <div class="alert alert-danger mb-3">
                     <i class="fas fa-exclamation-triangle"></i>
                     <strong>QUAN TRỌNG:</strong> Nội dung chuyển khoản BẮT BUỘC phải là <code
-                        style="color: #fff; font-size: 1.1em;"><?= e($transferContent) ?></code>
+                        style="color: var(--accent-danger); background: var(--bg-card); padding: 4px 8px; border-radius: 4px; font-weight: 800; font-size: 1.1em; letter-spacing: 1px;"><?= e($transferContent) ?></code>
                 </div>
 
                 <div class="alert alert-info mb-0">

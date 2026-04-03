@@ -142,7 +142,7 @@
     .guide-content li {
         font-size: 1.1rem;
         line-height: 1.6;
-        color: #e0e0e0;
+        color: var(--text-secondary);
     }
 
     .guide-content ol li {
