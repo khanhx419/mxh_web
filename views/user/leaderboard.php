@@ -16,18 +16,6 @@
             <button class="leaderboard-tab" data-tab="tab-points">
                 <i class="fas fa-leaf"></i> Top Điểm Xanh
             </button>
-            <button class="leaderboard-tab" data-tab="tab-chess-easy">
-                🟢 Cờ Vua Easy
-            </button>
-            <button class="leaderboard-tab" data-tab="tab-chess-medium">
-                🟡 Cờ Vua Medium
-            </button>
-            <button class="leaderboard-tab" data-tab="tab-chess-hard">
-                🟠 Cờ Vua Hard
-            </button>
-            <button class="leaderboard-tab" data-tab="tab-chess-hell">
-                🔴 Cờ Vua Hell
-            </button>
         </div>
 
         <!-- Tab: Top Nạp -->
@@ -156,64 +144,10 @@
             <?php endif; ?>
         </div>
 
-        <!-- Chess Tabs (4 difficulties) -->
-        <?php
-        $chessLabels = [
-            'easy' => ['🟢 Easy', '+1 điểm/thắng'],
-            'medium' => ['🟡 Medium', '+3 điểm/thắng'],
-            'hard' => ['🟠 Hard', '+5 điểm/thắng'],
-            'hell' => ['🔴 Hell', '+10 điểm/thắng']
-        ];
-        foreach ($chessLabels as $diff => $meta):
-            $players = $topChess[$diff] ?? [];
-        ?>
-        <div class="leaderboard-panel" id="tab-chess-<?= $diff ?>" style="display: none;">
-            <div style="text-align: center; margin-bottom: 12px;">
-                <span style="font-size: 0.82rem; color: var(--text-muted);"><?= $meta[1] ?></span>
-            </div>
-            <?php if (empty($players)): ?>
-                <div class="empty-state">
-                    <i class="fas fa-chess-knight"></i>
-                    <h3>Chưa có dữ liệu</h3>
-                </div>
-            <?php else: ?>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th style="width: 60px;">#</th>
-                            <th>Người dùng</th>
-                            <th class="text-right">Số trận thắng</th>
-                            <th class="text-right">Tổng điểm</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($players as $i => $player): ?>
-                            <tr class="rank-row">
-                                <td>
-                                    <?php if ($i < 3): ?>
-                                        <span class="rank-badge rank-<?= $i + 1 ?>"><?= $i + 1 ?></span>
-                                    <?php else: ?>
-                                        <span style="color: var(--text-muted); font-weight: 600; padding-left: 8px;"><?= $i + 1 ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span style="font-weight: 600;">
-                                        <i class="fas fa-chess-knight" style="color: var(--accent-primary); margin-right: 4px;"></i>
-                                        <?= e($player['username']) ?>
-                                    </span>
-                                </td>
-                                <td class="text-right" style="font-weight: 700; color: var(--accent-info);">
-                                    <?= number_format($player['wins']) ?> trận
-                                </td>
-                                <td class="text-right" style="font-weight: 700; color: var(--accent-warning);">
-                                    ⭐ <?= number_format($player['total_points']) ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
+        <div style="text-align:center;margin-top:16px;">
+            <a href="<?= url('/chess') ?>" style="font-size:0.85rem;color:var(--accent-primary);">
+                <i class="fas fa-chess-knight"></i> Xem Bảng xếp hạng Cờ Vua tại trang Cờ Vua AI
+            </a>
         </div>
-        <?php endforeach; ?>
     </div>
 </div>

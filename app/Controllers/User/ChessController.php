@@ -16,13 +16,17 @@ class ChessController extends Controller
     public function index()
     {
         $userId = $_SESSION['user_id'];
-        $this->ensureChessScoreColumn();
 
         $db = getDatabaseConnection();
-        $stmt = $db->prepare("SELECT chess_score FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $row = $stmt->fetch();
-        $chessScore = intval($row['chess_score'] ?? 0);
+        
+        // Get score from chess_wins table
+        $chessScore = 0;
+        try {
+            $stmt = $db->prepare("SELECT COALESCE(SUM(points), 0) as total FROM chess_wins WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            $row = $stmt->fetch();
+            $chessScore = intval($row['total'] ?? 0);
+        } catch (Exception $e) {}
 
         // Lấy stats per difficulty
         $userStats = ['easy' => 0, 'medium' => 0, 'hard' => 0, 'hell' => 0];
@@ -94,15 +98,9 @@ class ChessController extends Controller
 
         $points = $pointsMap[$difficulty];
 
-        $this->ensureChessScoreColumn();
-
         $db = getDatabaseConnection();
 
-        // Update total score
-        $stmt = $db->prepare("UPDATE users SET chess_score = chess_score + ? WHERE id = ?");
-        $stmt->execute([$points, $userId]);
-
-        // Log win to chess_wins table
+        // Log win to chess_wins table (separate leaderboard — NOT added to user balance)
         try {
             $stmt = $db->prepare("INSERT INTO chess_wins (user_id, difficulty, points) VALUES (?, ?, ?)");
             $stmt->execute([$userId, $difficulty, $points]);
@@ -110,10 +108,14 @@ class ChessController extends Controller
             // Table might not exist yet
         }
 
-        $stmt2 = $db->prepare("SELECT chess_score FROM users WHERE id = ?");
-        $stmt2->execute([$userId]);
-        $row = $stmt2->fetch();
-        $newScore = intval($row['chess_score'] ?? 0);
+        // Get total score from chess_wins table
+        $newScore = 0;
+        try {
+            $stmt2 = $db->prepare("SELECT COALESCE(SUM(points), 0) as total FROM chess_wins WHERE user_id = ?");
+            $stmt2->execute([$userId]);
+            $row = $stmt2->fetch();
+            $newScore = intval($row['total'] ?? 0);
+        } catch (Exception $e) {}
 
         echo json_encode([
             'status'  => 'success',

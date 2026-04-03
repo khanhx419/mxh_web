@@ -40,6 +40,28 @@
         </div>
     </div>
 
+    <!-- SMM Panel API -->
+    <div class="form-card" style="margin-bottom:24px">
+        <h3 style="margin-bottom:4px"><i class="fas fa-server"></i> Cấu hình SMM Panel</h3>
+        <p class="form-section-note"><i class="fas fa-info-circle"></i> Kết nối với SMM Panel (web mẹ) để đồng bộ dịch vụ tăng follow, like, sub... Giá trị trong .env sẽ bị ghi đè nếu bạn nhập ở đây.</p>
+
+        <div class="form-group">
+            <label>SMM API URL</label>
+            <input type="url" name="smm_api_url" class="form-control" value="<?= e($settings['smm_api_url'] ?? '') ?>" placeholder="https://sub6sao.com/api/v2">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> URL API của SMM Panel (ví dụ: https://sub6sao.com/api/v2)</small>
+        </div>
+        <div class="form-group">
+            <label>SMM API Key</label>
+            <input type="text" name="smm_api_key" class="form-control" value="<?= e($settings['smm_api_key'] ?? '') ?>" placeholder="Nhập API Key từ SMM Panel">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Lấy API Key từ trang quản lý tài khoản trên SMM Panel</small>
+        </div>
+        <div class="form-group">
+            <label>Phần trăm markup giá (%)</label>
+            <input type="number" name="smm_price_markup" class="form-control" value="<?= e($settings['smm_price_markup'] ?? '60') ?>" min="0" max="500" placeholder="60">
+            <small class="form-hint"><i class="fas fa-lightbulb"></i> Tỷ lệ cộng thêm vào giá gốc từ web mẹ. VD: 60 = bán giá gốc + 60%</small>
+        </div>
+    </div>
+
     <!-- Thông báo Nạp tiền -->
     <div class="form-card" style="margin-bottom:24px">
         <h3 style="margin-bottom:4px"><i class="fas fa-money-bill-wave"></i> Thông báo Nạp tiền</h3>
@@ -144,27 +166,6 @@
         </div>
     </div>
 
-    <!-- SMM Panel API -->
-    <div class="form-card" style="margin-bottom:24px">
-        <h3 style="margin-bottom:4px"><i class="fas fa-server"></i> Cấu hình SMM Panel</h3>
-        <p class="form-section-note"><i class="fas fa-info-circle"></i> Kết nối với SMM Panel (web mẹ) để đồng bộ dịch vụ tăng follow, like, sub... Giá trị trong .env sẽ bị ghi đè nếu bạn nhập ở đây.</p>
-
-        <div class="form-group">
-            <label>SMM API URL</label>
-            <input type="url" name="smm_api_url" class="form-control" value="<?= e($settings['smm_api_url'] ?? '') ?>" placeholder="https://sub6sao.com/api/v2">
-            <small class="form-hint"><i class="fas fa-lightbulb"></i> URL API của SMM Panel (ví dụ: https://sub6sao.com/api/v2)</small>
-        </div>
-        <div class="form-group">
-            <label>SMM API Key</label>
-            <input type="text" name="smm_api_key" class="form-control" value="<?= e($settings['smm_api_key'] ?? '') ?>" placeholder="Nhập API Key từ SMM Panel">
-            <small class="form-hint"><i class="fas fa-lightbulb"></i> Lấy API Key từ trang quản lý tài khoản trên SMM Panel</small>
-        </div>
-        <div class="form-group">
-            <label>Phần trăm markup giá (%)</label>
-            <input type="number" name="smm_price_markup" class="form-control" value="<?= e($settings['smm_price_markup'] ?? '60') ?>" min="0" max="500" placeholder="60">
-            <small class="form-hint"><i class="fas fa-lightbulb"></i> Tỷ lệ cộng thêm vào giá gốc từ web mẹ. VD: 60 = bán giá gốc + 60%</small>
-        </div>
-    </div>
 
     <!-- Telegram Bot -->
     <div class="form-card" style="margin-bottom:24px">

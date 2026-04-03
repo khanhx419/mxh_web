@@ -76,6 +76,7 @@ try {
     $router->get('/contact', 'User/PageController@contact');
     $router->post('/contact/send', 'User/PageController@submitContact');
     $router->get('/colors', 'User/PageController@colors');
+    $router->post('/green-points/exchange', 'User/PageController@exchangeGreenPoints');
     $router->get('/lucky-wheel', 'User/LuckyWheelController@index');
     $router->post('/lucky-wheel/spin', 'User/LuckyWheelController@spin');
     $router->get('/mystery-bag', 'User/MysteryBagController@index');

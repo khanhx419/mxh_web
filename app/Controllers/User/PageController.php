@@ -170,6 +170,72 @@ class PageController extends Controller
     }
 
     /**
+     * Đổi điểm xanh thành số dư tài khoản
+     */
+    public function exchangeGreenPoints()
+    {
+        header('Content-Type: application/json');
+
+        if (!verifyCsrf()) {
+            echo json_encode(['status' => 'error', 'message' => 'Phiên hết hạn']);
+            return;
+        }
+
+        if (!isLoggedIn()) {
+            echo json_encode(['status' => 'error', 'message' => 'Vui lòng đăng nhập']);
+            return;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $pointsRequired = 30;
+        $moneyReward = 10000; // 10,000 VNĐ
+
+        try {
+            $greenPointModel = $this->model('GreenPoint');
+            $totalPoints = $greenPointModel->getUserTotal($userId);
+
+            if ($totalPoints < $pointsRequired) {
+                echo json_encode(['status' => 'error', 'message' => 'Bạn cần tối thiểu ' . $pointsRequired . ' điểm xanh để đổi. Hiện có: ' . $totalPoints]);
+                return;
+            }
+
+            $db = getDatabaseConnection();
+
+            // Trừ điểm xanh
+            $db->prepare("UPDATE users SET green_points_total = green_points_total - ? WHERE id = ? AND green_points_total >= ?")
+                ->execute([$pointsRequired, $userId, $pointsRequired]);
+
+            // Ghi log trừ điểm
+            $db->prepare("INSERT INTO green_points (user_id, points, reason, created_at) VALUES (?, ?, ?, NOW())")
+                ->execute([$userId, -$pointsRequired, 'Đổi ' . $pointsRequired . ' điểm → ' . number_format($moneyReward) . 'đ']);
+
+            // Cộng tiền vào balance
+            $userModel = $this->model('User');
+            $userModel->updateBalance($userId, $moneyReward);
+            $newBalance = $userModel->getBalance($userId);
+
+            // Ghi log transaction
+            $transModel = $this->model('Transaction');
+            $transModel->log($userId, 'refund', $moneyReward, $newBalance, 'Đổi ' . $pointsRequired . ' điểm xanh');
+
+            // Update session
+            $_SESSION['user_balance'] = $newBalance;
+
+            $newTotal = $greenPointModel->getUserTotal($userId);
+
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Đổi thành công! +' . number_format($moneyReward) . 'đ vào tài khoản',
+                'new_points' => $newTotal,
+                'new_balance' => formatMoney($newBalance),
+                'csrf_token' => $_SESSION['csrf_token'] ?? ''
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => 'Lỗi hệ thống: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Trang Hướng dẫn
      */
     public function guide()

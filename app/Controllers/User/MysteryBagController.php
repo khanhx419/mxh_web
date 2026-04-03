@@ -37,7 +37,7 @@ class MysteryBagController extends Controller
     }
 
     /**
-     * Xử lý mở túi (CHỈ trả tiền - KHÔNG dùng free spin)
+     * Xử lý mở túi (100% WIN — luôn nhận tài khoản ngẫu nhiên)
      */
     public function open($bagId)
     {
@@ -71,56 +71,32 @@ class MysteryBagController extends Controller
             return;
         }
 
+        // Kiểm tra còn tài khoản không
+        $items = $bagModel->getAvailableItems($bagId);
+        if (empty($items)) {
+            $this->json(['status' => 'error', 'message' => 'Túi mù đã hết tài khoản. Vui lòng chờ admin bổ sung!']);
+            return;
+        }
+
         // Trừ tiền mua túi
         $userModel->updateBalance($userId, -$price);
         $newBalance = $userModel->getBalance($userId);
         $transModel->log($userId, 'purchase', $price, $newBalance, 'Mua túi mù: ' . $bag['name']);
 
-        // === LOGIC QUAY ===
-        $items = $bagModel->getAvailableItems($bagId);
+        // === 100% WIN: Luôn nhận tài khoản ngẫu nhiên ===
+        $wonItem = $bagModel->open($bagId);
 
-        if (!empty($items)) {
-            // Item-based probability
-            $wonItem = $bagModel->open($bagId);
+        $itemName = $wonItem['name'];
+        $itemContent = $wonItem['content'];
+        $itemValue = intval($wonItem['value']);
 
-            if ($wonItem) {
-                $itemName = $wonItem['name'];
-                $itemContent = $wonItem['content'];
-                $itemValue = intval($wonItem['value']);
-
-                if ($itemValue > 0) {
-                    $userModel->updateBalance($userId, $itemValue);
-                    $finalBalance = $userModel->getBalance($userId);
-                    $transModel->log($userId, 'refund', $itemValue, $finalBalance, 'Phần thưởng túi mù: ' . $itemName);
-                }
-
-                $bagModel->logHistory($userId, $bagId, $wonItem);
-            } else {
-                $itemName = 'Chúc May Mắn Lần Sau';
-                $itemContent = 'Rất tiếc, chúc bạn may mắn lần sau nhé! 🍀';
-                $itemValue = 0;
-                $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
-            }
-        } else {
-            // Fallback: 80/20 logic
-            $randomChance = mt_rand(1, 100);
-
-            if ($randomChance <= 80) {
-                $itemName = 'Chúc May Mắn Lần Sau';
-                $itemContent = 'Rất tiếc, chúc bạn may mắn lần sau nhé! 🍀';
-                $itemValue = 0;
-                $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
-            } else {
-                $itemName = 'Thưởng ' . formatMoney($price);
-                $itemContent = 'Bạn nhận được ' . formatMoney($price) . ' vào tài khoản!';
-                $itemValue = $price;
-
-                $userModel->updateBalance($userId, $itemValue);
-                $finalBalance = $userModel->getBalance($userId);
-                $transModel->log($userId, 'refund', $itemValue, $finalBalance, 'Phần thưởng túi mù: ' . $itemName);
-                $bagModel->logHistoryCustom($userId, $bagId, $itemName, $itemContent);
-            }
+        if ($itemValue > 0) {
+            $userModel->updateBalance($userId, $itemValue);
+            $finalBalance = $userModel->getBalance($userId);
+            $transModel->log($userId, 'refund', $itemValue, $finalBalance, 'Phần thưởng túi mù: ' . $itemName);
         }
+
+        $bagModel->logHistory($userId, $bagId, $wonItem);
 
         // Cập nhật session balance
         $_SESSION['user_balance'] = $userModel->getBalance($userId);
@@ -130,12 +106,37 @@ class MysteryBagController extends Controller
             'item_name' => $itemName,
             'item_content' => $itemContent,
             'item_value' => $itemValue,
-            'is_lucky' => ($itemValue > 0),
-            'message' => ($itemValue > 0) 
-                ? 'Chúc mừng! Bạn đã nhận được: ' . $itemName 
-                : $itemContent,
+            'is_lucky' => true,
+            'message' => 'Chúc mừng! Bạn đã nhận được: ' . $itemName,
             'balance' => formatMoney($_SESSION['user_balance']),
             'csrf_token' => $_SESSION['csrf_token']
         ]);
+    }
+
+    /**
+     * Điểm danh hàng ngày (API)
+     */
+    public function checkin()
+    {
+        header('Content-Type: application/json');
+
+        if (!verifyCsrf()) {
+            echo json_encode(['status' => 'error', 'message' => 'Phiên làm việc hết hạn']);
+            return;
+        }
+
+        if (!isLoggedIn()) {
+            echo json_encode(['status' => 'error', 'message' => 'Vui lòng đăng nhập']);
+            return;
+        }
+
+        $userId = $_SESSION['user_id'];
+        $checkinModel = $this->model('DailyCheckin');
+        $result = $checkinModel->checkin($userId);
+
+        // Thêm csrf_token mới vào response
+        $result['csrf_token'] = $_SESSION['csrf_token'] ?? '';
+
+        echo json_encode($result);
     }
 }
