@@ -2,6 +2,7 @@
 
 /**
  * Router - Xử lý định tuyến URL
+ * Tương thích: XAMPP local + cPanel production
  */
 class Router
 {
@@ -81,7 +82,10 @@ class Router
     }
 
     /**
-     * Lấy URI từ request
+     * Lấy URI từ request - Tương thích mọi môi trường
+     *
+     * XAMPP: APP_URL = http://localhost/mxh_web/public → basePath = /mxh_web/public
+     * cPanel: APP_URL = https://metaultra.shop        → basePath = '' hoặc null
      */
     private function getUri()
     {
@@ -90,13 +94,18 @@ class Router
         // Loại bỏ query string
         $uri = strtok($uri, '?');
 
-        // Loại bỏ base path
+        // Loại bỏ base path (từ APP_URL)
         $basePath = parse_url(APP_URL, PHP_URL_PATH);
         if ($basePath && $basePath !== '/') {
-            $uri = substr($uri, strlen($basePath));
+            // Chuẩn hóa: bỏ trailing slash
+            $basePath = rtrim($basePath, '/');
+
+            if (strpos($uri, $basePath) === 0) {
+                $uri = substr($uri, strlen($basePath));
+            }
         }
 
-        // Normalize
+        // Normalize: đảm bảo bắt đầu bằng /
         $uri = '/' . trim($uri, '/');
 
         return $uri;

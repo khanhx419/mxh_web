@@ -1,11 +1,25 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /mxh_web/public/
 
-    # Nếu file hoặc thư mục tồn tại thì phục vụ trực tiếp
+    # ★ Tự động detect base path — hoạt động trên mọi môi trường
+    # XAMPP: /mxh_web/public/  |  cPanel: /
+    RewriteBase /
+
+    # Nếu file hoặc thư mục tồn tại thì phục vụ trực tiếp (CSS, JS, images)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
 
     # Chuyển tất cả request về index.php
     RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>
+
+# Bảo mật: Chặn truy cập file nhạy cảm
+<FilesMatch "\.(env|php~|bak|sql|log)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

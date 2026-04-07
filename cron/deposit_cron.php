@@ -36,6 +36,16 @@ foreach ($argv ?? [] as $arg) {
     }
 }
 
+// ★ FILE LOCK — Chống chạy 2 cron instance cùng lúc
+$lockFile = sys_get_temp_dir() . '/deposit_cron_' . $type . '.lock';
+$lockHandle = fopen($lockFile, 'w');
+if (!flock($lockHandle, LOCK_EX | LOCK_NB)) {
+    echo "[" . date('Y-m-d H:i:s') . "] Cron {$type} đang chạy bởi process khác. Bỏ qua.\n";
+    fclose($lockHandle);
+    exit(0);
+}
+// Lock acquired — sẽ tự giải phóng khi script kết thúc
+
 echo "[" . date('Y-m-d H:i:s') . "] Deposit Cron Started — Type: {$type}\n";
 
 $settingModel = new Setting();
@@ -121,7 +131,7 @@ foreach ($list_transaction as $item) {
     $txAmount = intval($item['amount']);
     $txDesc = strtoupper($item['description']);
 
-    // Check duplicate
+    // Check duplicate (nhẹ, không lock)
     if ($invoiceModel->isTransactionProcessed($txId)) {
         continue;
     }
@@ -144,44 +154,95 @@ foreach ($list_transaction as $item) {
         continue;
     }
 
-    // Process deposit
-    $userId = $matchedInvoice['user_id'];
-    $payAmount = intval($matchedInvoice['pay']);
+    // ═══════════════════════════════════════════
+    // ★ DB TRANSACTION — chống race condition với BankingController::checkStatus
+    // ═══════════════════════════════════════════
+    $db->beginTransaction();
+    try {
+        // Lock invoice row — nếu user đang check thì chờ
+        $stmtLock = $db->prepare("SELECT * FROM invoices WHERE id = ? AND status = 0 FOR UPDATE");
+        $stmtLock->execute([$matchedInvoice['id']]);
+        $lockedInvoice = $stmtLock->fetch();
 
-    // Apply discount
-    $finalAmount = $payAmount;
-    if ($discount > 0) {
-        $finalAmount = $payAmount + ($payAmount * $discount) / 100;
+        // Invoice đã bị xử lý bởi user checkStatus → bỏ qua
+        if (!$lockedInvoice) {
+            $db->rollBack();
+            echo "⏭ GD {$txId}: Invoice #{$matchedInvoice['id']} đã bị xử lý trước đó.\n";
+            unset($invoiceMap[strtoupper($matchedInvoice['trans_id'])]);
+            continue;
+        }
+
+        // Double-check bank txId chưa xử lý (trong transaction)
+        $stmtCheck = $db->prepare("SELECT id FROM invoices WHERE tid = ? LIMIT 1");
+        $stmtCheck->execute([$txId]);
+        if ($stmtCheck->fetch()) {
+            $db->rollBack();
+            continue;
+        }
+
+        // Process deposit
+        $userId = $lockedInvoice['user_id'];
+        $payAmount = intval($lockedInvoice['pay']);
+
+        // Apply discount
+        $finalAmount = $payAmount;
+        if ($discount > 0) {
+            $finalAmount = $payAmount + ($payAmount * $discount) / 100;
+        }
+
+        // ✅ Update invoice
+        $stmtUpd = $db->prepare("UPDATE invoices SET status = 1, tid = ? WHERE id = ?");
+        $stmtUpd->execute([$txId, $lockedInvoice['id']]);
+
+        // ✅ Credit user
+        $userModel->updateBalance($userId, $finalAmount);
+        $userModel->incrementField($userId, 'total_deposit', $finalAmount);
+        $newBalance = $userModel->getBalance($userId);
+
+        // ✅ Log transaction
+        $transModel->log(
+            $userId,
+            'deposit',
+            $finalAmount,
+            $newBalance,
+            'Nạp tiền tự động ' . strtoupper($type) . ' - GD: ' . $txId . ($discount > 0 ? ' - KM: ' . $discount . '%' : '')
+        );
+
+        $db->commit();
+        // ═══════════════════════════════════════════
+        // ★ KẾT THÚC TRANSACTION
+        // ═══════════════════════════════════════════
+
+        // Commission (ngoài transaction, không critical)
+        processCommission($userId, $finalAmount, $userModel, $settingModel, $db);
+
+        // Telegram notification (ngoài transaction)
+        try {
+            require_once BASE_PATH . '/app/Services/TelegramService.php';
+            $telegram = new TelegramService();
+            $user = $userModel->findById($userId);
+            $telegram->notifyDeposit(
+                $userId,
+                $user['username'] ?? 'User#' . $userId,
+                $finalAmount,
+                $txId,
+                $newBalance
+            );
+        } catch (Exception $e) {
+            // Telegram lỗi không ảnh hưởng flow
+        }
+
+        // Remove matched invoice from map
+        unset($invoiceMap[strtoupper($matchedInvoice['trans_id'])]);
+
+        $processedCount++;
+        echo "✅ Nạp: User #{$userId} | +{$finalAmount}đ | GD: {$txId}\n";
+
+    } catch (Exception $e) {
+        $db->rollBack();
+        error_log("[deposit_cron] Transaction Error for GD {$txId}: " . $e->getMessage());
+        echo "❌ Lỗi GD {$txId}: " . $e->getMessage() . "\n";
     }
-
-    // Update invoice
-    $invoiceModel->update($matchedInvoice['id'], [
-        'status' => 1,
-        'tid' => $txId
-    ]);
-
-    // Credit user
-    $userModel->updateBalance($userId, $finalAmount);
-    $userModel->incrementField($userId, 'total_deposit', $finalAmount);
-    $newBalance = $userModel->getBalance($userId);
-
-    // Log transaction
-    $transModel->log(
-        $userId,
-        'deposit',
-        $finalAmount,
-        $newBalance,
-        'Nạp tiền tự động ' . strtoupper($type) . ' - GD: ' . $txId . ($discount > 0 ? ' - KM: ' . $discount . '%' : '')
-    );
-
-    // Commission
-    processCommission($userId, $finalAmount, $userModel, $settingModel, $db);
-
-    // Remove matched invoice from map
-    unset($invoiceMap[strtoupper($matchedInvoice['trans_id'])]);
-
-    $processedCount++;
-    echo "✅ Nạp: User #{$userId} | +{$finalAmount}đ | GD: {$txId}\n";
 }
 
 echo "\n[" . date('Y-m-d H:i:s') . "] Hoàn tất. Đã xử lý {$processedCount} giao dịch.\n";

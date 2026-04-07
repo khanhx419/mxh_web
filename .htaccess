@@ -1,10 +1,37 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Force HTTPS on production
+    # Force HTTPS on production (skip localhost)
     RewriteCond %{HTTPS} off
     RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
     RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
+    # Forward tất cả request vào thư mục public/
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
+
+# ═══════════════════════════════════════════════════
+# BẢO VỆ: Chặn truy cập trực tiếp vào các folder/file nhạy cảm
+# ═══════════════════════════════════════════════════
+
+# Chặn truy cập .env, .git, database files
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "\.(env|sql|log|bak|php~)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

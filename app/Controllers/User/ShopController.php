@@ -120,32 +120,59 @@ class ShopController extends Controller
             redirect('/product/' . $id);
         }
 
-        // Trừ tiền
-        $userModel->updateBalance($userId, -$product['price']);
-        $newBalance = $userModel->getBalance($userId);
-        $_SESSION['user_balance'] = $newBalance;
+        // ★ DB TRANSACTION — đảm bảo atomic: trừ tiền + sold + tạo order
+        $db = getDatabaseConnection();
+        $db->beginTransaction();
+        try {
+            // Lock product row chống mua trùng
+            $stmt = $db->prepare("SELECT * FROM products WHERE id = ? AND status = 'available' FOR UPDATE");
+            $stmt->execute([$id]);
+            $lockedProduct = $stmt->fetch();
 
-        // Đánh dấu sản phẩm đã bán
-        $productModel->update($id, ['status' => 'sold']);
+            if (!$lockedProduct) {
+                $db->rollBack();
+                setFlash('danger', 'Sản phẩm vừa được người khác mua mất rồi.');
+                redirect('/shop/games');
+            }
 
-        // Tạo đơn hàng
-        $orderModel = $this->model('Order');
-        $orderId = $orderModel->createProductOrder($userId, $id, $product['price']);
+            // Trừ tiền
+            $userModel->updateBalance($userId, -$lockedProduct['price']);
+            $newBalance = $userModel->getBalance($userId);
 
-        // Lưu account data vào order
-        $orderModel->update($orderId, ['account_data' => $product['account_info']]);
+            // Đánh dấu sản phẩm đã bán
+            $productModel->update($id, ['status' => 'sold']);
 
-        // Ghi giao dịch
-        require_once BASE_PATH . '/app/Models/Transaction.php';
-        $transModel = new Transaction();
-        $transModel->log($userId, 'purchase', $product['price'], $newBalance, 'Mua acc game: ' . $product['title']);
+            // Tạo đơn hàng
+            $orderModel = $this->model('Order');
+            $orderId = $orderModel->createProductOrder($userId, $id, $lockedProduct['price']);
 
-        setFlash('success', 'Mua thành công! Kiểm tra thông tin tài khoản trong mục "Đơn hàng".');
-        redirect('/my-orders');
+            // Lưu account data vào order
+            $orderModel->update($orderId, ['account_data' => $lockedProduct['account_info']]);
+
+            // Ghi giao dịch
+            require_once BASE_PATH . '/app/Models/Transaction.php';
+            $transModel = new Transaction();
+            $transModel->log($userId, 'purchase', $lockedProduct['price'], $newBalance, 'Mua acc game: ' . $lockedProduct['title']);
+
+            $db->commit();
+
+            $_SESSION['user_balance'] = $newBalance;
+            setFlash('success', 'Mua thành công! Kiểm tra thông tin tài khoản trong mục "Đơn hàng".');
+            redirect('/my-orders');
+
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log("[ShopController] buyProduct Transaction Error: " . $e->getMessage());
+            setFlash('danger', 'Lỗi hệ thống khi xử lý đơn hàng. Tiền chưa bị trừ, vui lòng thử lại.');
+            redirect('/product/' . $id);
+        }
     }
 
     /**
      * Mua dịch vụ MXH - Tự động đẩy đơn lên web mẹ
+     *
+     * ★ AN TOÀN: DB Transaction cho trừ tiền + tạo order
+     * SMM API gọi SAU transaction (vì external service không thể rollback)
      */
     public function buyService($id)
     {
@@ -188,13 +215,37 @@ class ShopController extends Controller
             redirect('/service/' . $id);
         }
 
-        // Trừ tiền
-        $userModel->updateBalance($userId, -$totalPrice);
-        $newBalance = $userModel->getBalance($userId);
+        // ★ DB TRANSACTION — đảm bảo atomic: trừ tiền + tạo order
+        $db = getDatabaseConnection();
+        $db->beginTransaction();
+        try {
+            // Trừ tiền
+            $userModel->updateBalance($userId, -$totalPrice);
+            $newBalance = $userModel->getBalance($userId);
+
+            // Tạo đơn hàng (chưa có smm_order_id, sẽ update sau)
+            $orderModel = $this->model('Order');
+            $orderId = $orderModel->createServiceOrder($userId, $id, $quantity, $targetLink, $totalPrice, null);
+
+            // Ghi giao dịch
+            require_once BASE_PATH . '/app/Models/Transaction.php';
+            $transModel = new Transaction();
+            $transModel->log($userId, 'purchase', $totalPrice, $newBalance, 'Dịch vụ: ' . $service['name'] . ' x' . number_format($quantity));
+
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log("[ShopController] buyService Transaction Error: " . $e->getMessage());
+            setFlash('danger', 'Lỗi hệ thống khi xử lý đơn hàng. Tiền chưa bị trừ, vui lòng thử lại.');
+            redirect('/service/' . $id);
+            return; // explicit return sau redirect
+        }
+
         $_SESSION['user_balance'] = $newBalance;
 
         // ============================================================
-        // Đẩy đơn lên web mẹ (nếu dịch vụ có smm_service_id)
+        // Đẩy đơn lên web mẹ SAU KHI transaction thành công
+        // (SMM API là external → không thể rollback)
         // ============================================================
         $smmOrderId = null;
         $smmServiceId = $service['smm_service_id'] ?? null;
@@ -206,21 +257,14 @@ class ShopController extends Controller
 
             if (isset($apiResult['order'])) {
                 $smmOrderId = intval($apiResult['order']);
+                // Update order với smm_order_id
+                $orderModel->update($orderId, ['smm_order_id' => $smmOrderId, 'status' => 'processing']);
             } else {
-                // API lỗi → vẫn tạo đơn nội bộ, admin xử lý thủ công
+                // API lỗi → đơn nội bộ vẫn tồn tại, admin xử lý thủ công
                 $errorMsg = $apiResult['error'] ?? 'Unknown API error';
-                error_log("[SMM API Error] Service #{$id}, User #{$userId}: {$errorMsg}");
+                error_log("[SMM API Error] Service #{$id}, User #{$userId}, Order #{$orderId}: {$errorMsg}");
             }
         }
-
-        // Tạo đơn hàng (với smm_order_id nếu có)
-        $orderModel = $this->model('Order');
-        $orderModel->createServiceOrder($userId, $id, $quantity, $targetLink, $totalPrice, $smmOrderId);
-
-        // Ghi giao dịch
-        require_once BASE_PATH . '/app/Models/Transaction.php';
-        $transModel = new Transaction();
-        $transModel->log($userId, 'purchase', $totalPrice, $newBalance, 'Dịch vụ: ' . $service['name'] . ' x' . number_format($quantity));
 
         if ($smmOrderId) {
             setFlash('success', 'Đặt dịch vụ thành công! Đơn hàng #' . $smmOrderId . ' đang được xử lý tự động.');
@@ -230,3 +274,4 @@ class ShopController extends Controller
         redirect('/my-orders');
     }
 }
+

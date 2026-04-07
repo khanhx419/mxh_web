@@ -91,6 +91,8 @@ class BankingController extends Controller
     /**
      * Kiểm tra trạng thái nạp tiền (user bấm nút "Kiểm tra")
      * Gọi API ngân hàng real-time 1 lần để check
+     *
+     * ★ AN TOÀN: Dùng DB Transaction + SELECT FOR UPDATE chống nạp trùng
      */
     public function checkStatus()
     {
@@ -103,7 +105,7 @@ class BankingController extends Controller
         $prefix = strtoupper($settingModel->get('bank_prefix', 'NAP'));
         $transId = $prefix . $userId;
 
-        // Tìm invoice pending của user này
+        // Tìm invoice pending của user này (query nhẹ, chưa lock)
         $invoice = $invoiceModel->findOneWhere([
             'trans_id' => $transId,
             'status' => 0
@@ -123,7 +125,7 @@ class BankingController extends Controller
             return;
         }
 
-        // Dùng cURL thay vì file_get_contents cho độ tin cậy cao hơn
+        // Dùng cURL gọi API bank
         $fullUrl = $apiUrl . '/' . $apiToken;
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -159,6 +161,7 @@ class BankingController extends Controller
 
         $transactions = $data['transactions'] ?? [];
         $found = false;
+        $db = getDatabaseConnection();
 
         foreach ($transactions as $tx) {
             if (($tx['type'] ?? '') !== 'IN')
@@ -168,7 +171,7 @@ class BankingController extends Controller
             $txAmount = intval($tx['amount'] ?? 0);
             $txDesc = strtoupper($tx['description'] ?? '');
 
-            // Đã xử lý rồi?
+            // Đã xử lý rồi? (check nhẹ trước khi lock)
             if ($invoiceModel->isTransactionProcessed($txId))
                 continue;
 
@@ -180,46 +183,84 @@ class BankingController extends Controller
             if ($txAmount < intval($invoice['pay']))
                 continue;
 
-            // ✅ Khớp! Cộng tiền
-            $invoiceModel->update($invoice['id'], [
-                'status' => 1,
-                'tid' => $txId
-            ]);
-
-            $userModel->updateBalance($userId, intval($invoice['pay']));
-            $newBalance = $userModel->getBalance($userId);
-            $_SESSION['user_balance'] = $newBalance;
-
-            $transModel->log(
-                $userId,
-                'deposit',
-                intval($invoice['pay']),
-                $newBalance,
-                'Nạp tiền tự động - Mã GD: ' . $txId
-            );
-
-            // Gửi thông báo Telegram
+            // ═══════════════════════════════════════════
+            // ★ BẮT ĐẦU TRANSACTION AN TOÀN
+            // ═══════════════════════════════════════════
+            $db->beginTransaction();
             try {
-                require_once BASE_PATH . '/app/Services/TelegramService.php';
-                $telegram = new TelegramService();
-                $telegram->notifyDeposit(
-                    $userId,
-                    $_SESSION['username'] ?? 'User#' . $userId,
-                    intval($invoice['pay']),
-                    $txId,
-                    $newBalance
-                );
-            } catch (Exception $e) {
-                // Không block flow nếu Telegram lỗi
-            }
+                // Lock invoice row — nếu cron đang xử lý thì chờ
+                $stmt = $db->prepare("SELECT * FROM invoices WHERE id = ? AND status = 0 FOR UPDATE");
+                $stmt->execute([$invoice['id']]);
+                $lockedInvoice = $stmt->fetch();
 
-            $found = true;
-            $this->json([
-                'status' => 'success',
-                'message' => 'Nạp thành công ' . formatMoney($invoice['pay']) . '! Số dư mới: ' . formatMoney($newBalance),
-                'balance' => formatMoney($newBalance)
-            ]);
-            return;
+                // Nếu invoice đã được cron xử lý trước → bỏ qua
+                if (!$lockedInvoice) {
+                    $db->rollBack();
+                    $this->json(['status' => 'info', 'message' => 'Giao dịch đã được xử lý tự động. Hãy tải lại trang.']);
+                    return;
+                }
+
+                // Double-check: bank txId đã xử lý chưa (trong transaction)
+                $stmtCheck = $db->prepare("SELECT id FROM invoices WHERE tid = ? LIMIT 1");
+                $stmtCheck->execute([$txId]);
+                if ($stmtCheck->fetch()) {
+                    $db->rollBack();
+                    continue; // GD này đã xử lý, thử GD tiếp
+                }
+
+                // ✅ Cập nhật invoice
+                $stmtUpd = $db->prepare("UPDATE invoices SET status = 1, tid = ? WHERE id = ?");
+                $stmtUpd->execute([$txId, $lockedInvoice['id']]);
+
+                // ✅ Cộng tiền
+                $payAmount = intval($lockedInvoice['pay']);
+                $userModel->updateBalance($userId, $payAmount);
+                $newBalance = $userModel->getBalance($userId);
+
+                // ✅ Log giao dịch
+                $transModel->log(
+                    $userId,
+                    'deposit',
+                    $payAmount,
+                    $newBalance,
+                    'Nạp tiền tự động - Mã GD: ' . $txId
+                );
+
+                $db->commit();
+                // ═══════════════════════════════════════════
+                // ★ KẾT THÚC TRANSACTION
+                // ═══════════════════════════════════════════
+
+                $_SESSION['user_balance'] = $newBalance;
+
+                // Gửi thông báo Telegram (ngoài transaction, không block)
+                try {
+                    require_once BASE_PATH . '/app/Services/TelegramService.php';
+                    $telegram = new TelegramService();
+                    $telegram->notifyDeposit(
+                        $userId,
+                        $_SESSION['username'] ?? 'User#' . $userId,
+                        $payAmount,
+                        $txId,
+                        $newBalance
+                    );
+                } catch (Exception $e) {
+                    // Không block flow nếu Telegram lỗi
+                }
+
+                $found = true;
+                $this->json([
+                    'status' => 'success',
+                    'message' => 'Nạp thành công ' . formatMoney($payAmount) . '! Số dư mới: ' . formatMoney($newBalance),
+                    'balance' => formatMoney($newBalance)
+                ]);
+                return;
+
+            } catch (Exception $e) {
+                $db->rollBack();
+                error_log("[BankingController] checkStatus Transaction Error: " . $e->getMessage());
+                // Tiếp tục vòng lặp tìm GD khác
+            }
         }
 
         if (!$found) {
