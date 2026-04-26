@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Snake game with progressive difficulty, leaderboard, and neon retro aesthetic.">
+  <title>Snake Game</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0a0a1a;--panel:#111128;--accent:#00ff88;--accent2:#00d4ff;
+      --pink:#ff3a6e;--gold:#ffd700;--txt:#eaeaea;--txt2:#8888aa;
+      --retro:'Press Start 2P',monospace;--main:'Inter',sans-serif;
+    }
+    body{font-family:var(--main);background:var(--bg);
+      background-image:radial-gradient(ellipse at 30% 60%,#00ff8808 0%,transparent 60%),radial-gradient(ellipse at 70% 20%,#00d4ff08 0%,transparent 60%);
+      color:var(--txt);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;user-select:none}
+    h1{font-family:var(--retro);font-size:1.5rem;color:var(--accent);text-shadow:0 0 20px rgba(0,255,136,.4),0 0 40px rgba(0,255,136,.2);margin-bottom:16px;letter-spacing:3px}
+    .stats{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
+    .stat-box{font-family:var(--retro);font-size:.7rem;padding:8px 14px;background:var(--panel);border:2px solid #2a2a4a;border-radius:8px;text-align:center;min-width:80px}
+    .stat-box .label{color:var(--txt2);font-size:.5rem;margin-bottom:4px}
+    .stat-box .val{font-size:.9rem}
+    .score-val{color:var(--accent)}.best-val{color:var(--gold)}.level-val{color:var(--accent2)}.speed-val{color:var(--pink)}
+    .game-wrap{position:relative;display:inline-block}
+    canvas{display:block;border:2px solid #2a2a4a;border-radius:8px;background:#0d0d20}
+    .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);border-radius:8px;opacity:0;pointer-events:none;transition:opacity .3s}
+    .overlay.visible{opacity:1;pointer-events:all}
+    .overlay h2{font-family:var(--retro);font-size:1rem;margin-bottom:8px}
+    .overlay p{color:var(--txt2);font-size:.8rem;margin-bottom:16px}
+    .overlay button{padding:10px 28px;font-family:var(--main);font-size:.85rem;font-weight:700;border:2px solid var(--accent);background:transparent;color:var(--accent);border-radius:10px;cursor:pointer;transition:all .25s}
+    .overlay button:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px rgba(0,255,136,.4)}
+    .hs-btn{font-family:var(--main);font-size:.75rem;font-weight:600;padding:6px 16px;border:2px solid var(--gold);background:transparent;color:var(--gold);border-radius:8px;cursor:pointer;transition:all .2s;margin-bottom:12px}
+    .hs-btn:hover{background:var(--gold);color:var(--bg)}
+    /* Leaderboard overlay */
+    .lb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
+    .lb-overlay.visible{opacity:1;pointer-events:all}
+    .lb-box{background:var(--panel);border:2px solid #2a2a4a;border-radius:20px;padding:30px 40px;text-align:center;max-width:380px;width:90%;animation:slideUp .4s ease}
+    @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .lb-box h2{font-family:var(--retro);font-size:1rem;color:var(--gold);margin-bottom:16px}
+    .lb-table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:.75rem}
+    .lb-table th{color:var(--gold);font-size:.6rem;padding:6px;border-bottom:1px solid #2a2a4a;text-align:left}
+    .lb-table td{padding:6px;border-bottom:1px solid #1a1a30;color:var(--txt2)}
+    .lb-table td:first-child{color:var(--accent);font-weight:700}
+    .lb-box button{padding:8px 24px;font-family:var(--main);font-size:.8rem;font-weight:700;border:2px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;cursor:pointer;transition:all .2s}
+    .lb-box button:hover{background:var(--accent);color:var(--bg)}
+    /* Name prompt */
+    .name-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:300;opacity:0;pointer-events:none;transition:opacity .3s}
+    .name-overlay.visible{opacity:1;pointer-events:all}
+    .name-box{background:var(--panel);border:2px solid var(--gold);border-radius:16px;padding:30px;text-align:center;max-width:340px;width:90%;animation:slideUp .4s ease}
+    .name-box h3{font-family:var(--retro);font-size:.8rem;color:var(--gold);margin-bottom:12px}
+    .name-box input{width:100%;padding:10px;font-size:1rem;border:2px solid #2a2a4a;background:var(--bg);color:var(--txt);border-radius:8px;text-align:center;outline:none;margin-bottom:12px}
+    .name-box input:focus{border-color:var(--accent)}
+    .name-box button{padding:8px 24px;font-family:var(--main);font-size:.8rem;font-weight:700;border:2px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;cursor:pointer;transition:all .2s}
+    .name-box button:hover{background:var(--accent);color:var(--bg)}
+    /* D-Pad for mobile */
+    .dpad{display:none;margin-top:16px;position:relative;width:150px;height:150px}
+    .dpad button{position:absolute;width:50px;height:50px;background:var(--panel);border:2px solid #2a2a4a;border-radius:10px;color:var(--txt);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .dpad button:active{background:var(--accent);color:var(--bg)}
+    .dpad .up{top:0;left:50px}.dpad .down{bottom:0;left:50px}.dpad .left{top:50px;left:0}.dpad .right{top:50px;right:0}
+    @media(pointer:coarse){.dpad{display:block}}
+    @media(max-width:500px){canvas{width:100%!important;height:auto!important}}
+  </style>
+</head>
+<body>
+  <h1>🐍 SNAKE</h1>
+  <button class="hs-btn" id="hsBtn">🏆 HIGH SCORES</button>
+  <div class="stats">
+    <div class="stat-box"><div class="label">SCORE</div><div class="val score-val" id="score">0</div></div>
+    <div class="stat-box"><div class="label">BEST</div><div class="val best-val" id="best">0</div></div>
+    <div class="stat-box"><div class="label">LEVEL</div><div class="val level-val" id="level">1</div></div>
+    <div class="stat-box"><div class="label">SPEED</div><div class="val speed-val" id="speed">1.0x</div></div>
+  </div>
+  <div class="game-wrap">
+    <canvas id="canvas" width="400" height="400"></canvas>
+    <div class="overlay visible" id="startOverlay">
+      <h2 style="color:var(--accent)">🐍 SNAKE</h2>
+      <p>Arrow keys or WASD to move</p>
+      <button id="startBtn">START</button>
+    </div>
+    <div class="overlay" id="overOverlay">
+      <h2 style="color:var(--pink)">💀 GAME OVER</h2>
+      <p id="overMsg">Score: 0</p>
+      <button id="retryBtn">RETRY</button>
+    </div>
+  </div>
+  <div class="dpad" id="dpad">
+    <button class="up" data-dir="up">▲</button>
+    <button class="down" data-dir="down">▼</button>
+    <button class="left" data-dir="left">◀</button>
+    <button class="right" data-dir="right">▶</button>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="lb-overlay" id="lbOverlay">
+    <div class="lb-box">
+      <h2>🏆 HIGH SCORES</h2>
+      <table class="lb-table"><thead><tr><th>#</th><th>Name</th><th>Score</th><th>Level</th></tr></thead><tbody id="lbBody"></tbody></table>
+      <button id="lbClose">CLOSE</button>
+    </div>
+  </div>
+
+  <!-- Name Prompt -->
+  <div class="name-overlay" id="nameOverlay">
+    <div class="name-box">
+      <h3>🎉 NEW HIGH SCORE!</h3>
+      <p style="color:var(--txt2);font-size:.8rem;margin-bottom:12px">Enter your name:</p>
+      <input type="text" id="nameInput" maxlength="10" placeholder="Your name">
+      <button id="nameSave">SAVE</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d');
+    const GRID=20,CELL=canvas.width/GRID;
+    const DIRS={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+    const OPP={up:'down',down:'up',left:'right',right:'left'};
+
+    let snake,dir,nextDir,food,score,bestScore,level,speedMult,baseInterval,interval;
+    let gameLoop=null,running=false,foodPulse=0,flashTimer=0;
+
+    bestScore=parseInt(localStorage.getItem('snake_best')||'0');
+    document.getElementById('best').textContent=bestScore;
+
+    // Controls
+    document.addEventListener('keydown',e=>{
+      const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+      const d=map[e.key];if(!d)return;e.preventDefault();
+      if(d!==OPP[dir])nextDir=d;
+    });
+    document.getElementById('dpad').addEventListener('click',e=>{
+      const btn=e.target.closest('button');if(!btn)return;
+      const d=btn.dataset.dir;if(d&&d!==OPP[dir])nextDir=d;
+    });
+
+    document.getElementById('startBtn').addEventListener('click',()=>{document.getElementById('startOverlay').classList.remove('visible');startGame()});
+    document.getElementById('retryBtn').addEventListener('click',()=>{document.getElementById('overOverlay').classList.remove('visible');startGame()});
+    document.getElementById('hsBtn').addEventListener('click',()=>{renderLB();document.getElementById('lbOverlay').classList.add('visible')});
+    document.getElementById('lbClose').addEventListener('click',()=>document.getElementById('lbOverlay').classList.remove('visible'));
+    document.getElementById('nameSave').addEventListener('click',saveHighScore);
+    document.getElementById('nameInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveHighScore()});
+
+    function startGame(){
+      snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+      dir='right';nextDir='right';score=0;level=1;speedMult=1;
+      baseInterval=150;interval=baseInterval;flashTimer=0;
+      updateUI();spawnFood();
+      if(gameLoop)clearInterval(gameLoop);
+      running=true;gameLoop=setInterval(tick,interval);
+    }
+
+    function tick(){
+      dir=nextDir;
+      const head={x:snake[0].x+DIRS[dir].x,y:snake[0].y+DIRS[dir].y};
+
+      // Wall collision
+      if(head.x<0||head.x>=GRID||head.y<0||head.y>=GRID){endGame();return}
+      // Self collision
+      if(snake.some(s=>s.x===head.x&&s.y===head.y)){endGame();return}
+
+      snake.unshift(head);
+
+      if(head.x===food.x&&head.y===food.y){
+        score++;flashTimer=8;
+        // Progressive speed: every 5 food
+        if(score%5===0){
+          level++;speedMult=parseFloat((1+((level-1)*0.12)).toFixed(2));
+          interval=Math.max(40,Math.round(baseInterval/speedMult));
+          clearInterval(gameLoop);gameLoop=setInterval(tick,interval);
+        }
+        spawnFood();updateUI();
+      }else{snake.pop()}
+
+      foodPulse=(foodPulse+1)%30;
+      if(flashTimer>0)flashTimer--;
+      draw();
+    }
+
+    function spawnFood(){
+      let pos;do{pos={x:Math.floor(Math.random()*GRID),y:Math.floor(Math.random()*GRID)}}
+      while(snake.some(s=>s.x===pos.x&&s.y===pos.y));
+      food=pos;
+    }
+
+    function draw(){
+      // Background
+      ctx.fillStyle='#0d0d20';ctx.fillRect(0,0,canvas.width,canvas.height);
+      // Grid lines
+      ctx.strokeStyle='#1a1a30';ctx.lineWidth=0.5;
+      for(let i=0;i<=GRID;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,canvas.height);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(canvas.width,i*CELL);ctx.stroke()}
+
+      // Flash overlay
+      if(flashTimer>0){ctx.fillStyle=`rgba(0,255,136,${flashTimer*0.03})`;ctx.fillRect(0,0,canvas.width,canvas.height)}
+
+      // Snake
+      snake.forEach((s,i)=>{
+        const t=i/snake.length;
+        const r=Math.round(0+(1-t)*0),g=Math.round(255-(t*100)),b=Math.round(136-(t*80));
+        ctx.fillStyle=`rgb(${r},${g},${b})`;
+        const pad=1;
+        ctx.beginPath();
+        ctx.roundRect(s.x*CELL+pad,s.y*CELL+pad,CELL-pad*2,CELL-pad*2,4);
+        ctx.fill();
+
+        // Eyes on head
+        if(i===0){
+          ctx.fillStyle='#fff';
+          const cx=s.x*CELL+CELL/2,cy=s.y*CELL+CELL/2;
+          const dx=DIRS[dir].x,dy=DIRS[dir].y;
+          const perpX=-dy,perpY=dx;
+          const eyeR=2.5;
+          ctx.beginPath();ctx.arc(cx+perpX*4+dx*3,cy+perpY*4+dy*3,eyeR,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(cx-perpX*4+dx*3,cy-perpY*4+dy*3,eyeR,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#000';
+          ctx.beginPath();ctx.arc(cx+perpX*4+dx*4.5,cy+perpY*4+dy*4.5,1.2,0,Math.PI*2);ctx.fill();
+          ctx.beginPath();ctx.arc(cx-perpX*4+dx*4.5,cy-perpY*4+dy*4.5,1.2,0,Math.PI*2);ctx.fill();
+        }
+      });
+
+      // Food with pulse
+      const pulseScale=1+Math.sin(foodPulse/30*Math.PI*2)*0.15;
+      const fSize=(CELL-4)*pulseScale;
+      const fOff=(CELL-fSize)/2;
+      ctx.fillStyle='#ff3a6e';
+      ctx.shadowColor='#ff3a6e';ctx.shadowBlur=10+Math.sin(foodPulse/30*Math.PI*2)*6;
+      ctx.beginPath();ctx.roundRect(food.x*CELL+fOff,food.y*CELL+fOff,fSize,fSize,5);ctx.fill();
+      ctx.shadowBlur=0;
+    }
+
+    function endGame(){
+      running=false;clearInterval(gameLoop);gameLoop=null;
+      if(score>bestScore){bestScore=score;localStorage.setItem('snake_best',bestScore);document.getElementById('best').textContent=bestScore}
+      document.getElementById('overMsg').textContent=`Score: ${score} | Level: ${level}`;
+      document.getElementById('overOverlay').classList.add('visible');
+      checkHighScore();
+    }
+
+    function updateUI(){
+      document.getElementById('score').textContent=score;
+      document.getElementById('best').textContent=bestScore;
+      document.getElementById('level').textContent=level;
+      document.getElementById('speed').textContent=speedMult.toFixed(1)+'x';
+    }
+
+    // === LEADERBOARD ===
+    function getLB(){return JSON.parse(localStorage.getItem('snake_lb')||'[]')}
+    function saveLB(lb){localStorage.setItem('snake_lb',JSON.stringify(lb))}
+
+    function checkHighScore(){
+      const lb=getLB();
+      if(lb.length<5||score>lb[lb.length-1].score){
+        document.getElementById('nameInput').value='';
+        document.getElementById('nameOverlay').classList.add('visible');
+        setTimeout(()=>document.getElementById('nameInput').focus(),100);
+      }
+    }
+
+    function saveHighScore(){
+      let name=(document.getElementById('nameInput').value||'Player').trim().substring(0,10);
+      if(!name)name='Player';
+      document.getElementById('nameOverlay').classList.remove('visible');
+      const lb=getLB();
+      lb.push({name,score,level});
+      lb.sort((a,b)=>b.score-a.score);
+      saveLB(lb.slice(0,5));
+    }
+
+    function renderLB(){
+      const lb=getLB();const body=document.getElementById('lbBody');
+      if(!lb.length){body.innerHTML='<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--txt2)">No records yet</td></tr>';return}
+      body.innerHTML=lb.map((s,i)=>`<tr><td>${i+1}</td><td>${s.name}</td><td>${s.score}</td><td>${s.level}</td></tr>`).join('');
+    }
+
+    // Initial draw
+    ctx.fillStyle='#0d0d20';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle='#1a1a30';ctx.lineWidth=0.5;
+    for(let i=0;i<=GRID;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,canvas.height);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(canvas.width,i*CELL);ctx.stroke()}
+  </script>
+</body>
+</html>
